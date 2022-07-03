@@ -1,10 +1,21 @@
+use clap::Parser;
 use std::thread;
 use std::time::Duration;
 
+mod args;
 mod http;
 
 fn main() {
-  http::boot_server().expect("Problem with the web server");
+  let args = args::Args::parse();
+
+  match args.cmd.as_deref() {
+    Some("init") => {
+      // idk.. init
+    }
+    _ => {
+      http::boot_server().expect("Problem with the web server");
+    }
+  }
 
   loop {
     // do more later

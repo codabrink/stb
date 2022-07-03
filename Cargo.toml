@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 actix-web = "4"
 anyhow = "1"
+clap = { version = "3", features = ["derive"] }
 qdrant-client = { version = "0.8", path = "../qdrant-rust-client" }
