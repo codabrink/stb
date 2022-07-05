@@ -10,3 +10,10 @@ actix-web = "4"
 anyhow = "1"
 clap = { version = "3", features = ["derive"] }
 qdrant-client = { version = "0.8", path = "../qdrant-rust-client" }
+tokio = { version = "1", features = ["full"] }
+glob = "0.3"
+rusqlite = "0.27"
+regex = "1"
+reqwest = "0.11"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

@@ -7,7 +7,7 @@ async fn root() -> impl Responder {
 
 #[post("/query")]
 async fn query() -> impl Responder {
-  HttpResponse::Ok().body("nothign yet")
+  HttpResponse::Ok().body("nothing yet")
 }
 
 #[actix_web::main]
