@@ -3,7 +3,8 @@ from fastapi import FastAPI
 import numpy as np
 from typing import Union
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+# model = SentenceTransformer('multi-qa-distilbert-cos-v1')
+model = SentenceTransformer('multi-qa-mpnet-base-dot-v1')
 app = FastAPI()
 
 @app.get("/embed")

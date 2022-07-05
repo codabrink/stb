@@ -9,7 +9,7 @@ pub const SQLITE_DB: &'static str = "db.sqlite";
 pub const COLLECTION_NAME: &'static str = "verses";
 
 #[tokio::main]
-pub async fn build_sql() -> Result<()> {
+pub async fn rebuild_sql() -> Result<()> {
   let _ = std::fs::remove_file(SQLITE_DB);
   let conn = Connection::open(SQLITE_DB)?;
 
@@ -44,12 +44,14 @@ pub async fn build_sql() -> Result<()> {
 
     let mut verse = 1;
     for line in &lines[2..] {
+      if line.trim().is_empty() {
+        continue;
+      }
+
       conn.execute(
         "INSERT INTO verses (book, chapter, verse, content) VALUES (?1, ?2, ?3, ?4)",
         params![book, chapter, verse, line],
       )?;
-
-      println!("Inserted verse {}", verse);
 
       verse += 1;
     }
@@ -72,19 +74,21 @@ pub struct Embedding {
 }
 
 #[tokio::main]
-pub async fn build_vector() -> Result<()> {
+pub async fn rebuild_vector() -> Result<()> {
   let mut client = QdrantClient::new(None).await?;
 
-  if !client.has_collection(COLLECTION_NAME).await? {
-    client
-      .create_collection(CreateCollection {
-        collection_name: COLLECTION_NAME.into(),
-        distance: Distance::Cosine.into(),
-        vector_size: 384,
-        ..Default::default()
-      })
-      .await?;
+  if client.has_collection(COLLECTION_NAME).await? {
+    client.delete_collection(COLLECTION_NAME).await?;
   }
+
+  client
+    .create_collection(CreateCollection {
+      collection_name: COLLECTION_NAME.into(),
+      distance: Distance::Dot.into(),
+      vector_size: 768,
+      ..Default::default()
+    })
+    .await?;
 
   let conn = Connection::open(SQLITE_DB)?;
   let mut stmt = conn.prepare("SELECT id, book, chapter, verse, content FROM verses")?;

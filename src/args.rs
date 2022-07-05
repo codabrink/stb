@@ -3,10 +3,10 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 pub struct Args {
   #[clap(long)]
-  pub init_sql: bool,
+  pub rebuild_sql: bool,
 
   #[clap(long)]
-  pub init_vector: bool,
+  pub rebuild_vector: bool,
 
   #[clap(long, short)]
   pub server: bool,

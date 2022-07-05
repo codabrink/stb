@@ -10,15 +10,15 @@ mod search;
 fn main() {
   let args = args::Args::parse();
 
-  if args.init_sql {
-    init::build_sql().expect("could not init");
+  if args.rebuild_sql {
+    init::rebuild_sql().expect("could not init");
   }
-  if args.init_vector {
-    init::build_vector().expect("could not init");
+  if args.rebuild_vector {
+    init::rebuild_vector().expect("could not init");
   }
 
   if let Some(query) = &args.search {
-    search::search(query).expect("Could not search");
+    search::search_blocking(query, 10).expect("Could not search");
   }
   if args.server {
     http::boot_server().expect("Problem with the web server");
@@ -28,5 +28,4 @@ fn main() {
       thread::sleep(Duration::from_secs(1))
     }
   }
-  println!("{:?}", args.search);
 }
