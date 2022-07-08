@@ -10,7 +10,7 @@ actix-web = "4"
 qstring = "0.7"
 anyhow = "1"
 clap = { version = "3", features = ["derive"] }
-qdrant-client = { version = "0.8", path = "../qdrant-rust-client" }
+qdrant-client = { version = "0.8", git = "https://github.com/codabrink/qdrant-rust-client.git" }
 tokio = { version = "1", features = ["full"] }
 glob = "0.3"
 rusqlite = "0.27"

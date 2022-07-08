@@ -17,9 +17,13 @@ pub async fn search(query: impl ToString, limit: usize) -> Result<Vec<Verse>> {
   let response = reqwest::get(format!("http://localhost:8000/embed?q={}", &query)).await?;
   let embedding: Embedding = serde_json::from_str(&response.text().await?)?;
 
-  let result = client
-    .search(COLLECTION_NAME, embedding.embedding, limit as u64)
-    .await?;
+  let search = SearchPoints {
+    collection_name: COLLECTION_NAME.into(),
+    vector: embedding.embedding,
+    limit: limit as u64,
+    ..Default::default()
+  };
+  let result = client.search(search).await?;
 
   let mut verses = Vec::with_capacity(limit);
 

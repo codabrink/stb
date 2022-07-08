@@ -10,6 +10,10 @@ mod search;
 fn main() {
   let args = args::Args::parse();
 
+  if args.rebuild {
+    init::rebuild_sql().expect("Problem rebuilding sql");
+    init::rebuild_vector().expect("Problem rebuilding vector");
+  }
   if args.rebuild_sql {
     init::rebuild_sql().expect("could not init");
   }
