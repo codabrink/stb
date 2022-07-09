@@ -13,4 +13,4 @@ services:
     volumes:
       - ./qdrant/qdrant.tar:/qdrant.tar
       - ./qdrant/restore.sh:/restore.sh
-    entrypoint: "sh -c /restore.sh"
+    entrypoint: "chmod +x /restore.sh; sh -c /restore.sh"
