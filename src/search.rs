@@ -10,11 +10,18 @@ pub async fn search_blocking(query: impl ToString, limit: usize) -> Result<Vec<V
 }
 
 pub async fn search(query: impl ToString, limit: usize) -> Result<Vec<Verse>> {
-  let mut client = QdrantClient::new(None).await?;
+  let host = std::option_env!("QDRANT_HOST").unwrap_or("localhost");
+  let config = QdrantClientConfig {
+    uri: format!("http://{}:6334", host),
+    ..Default::default()
+  };
+
+  let mut client = QdrantClient::new(Some(config)).await?;
   let conn = Connection::open(SQLITE_DB)?;
   let query = query.to_string();
 
-  let response = reqwest::get(format!("http://localhost:8000/embed?q={}", &query)).await?;
+  let host = std::option_env!("EMBEDDER_HOST").unwrap_or("localhost");
+  let response = reqwest::get(format!("http://{}:8000/embed?q={}", host, &query)).await?;
   let embedding: Embedding = serde_json::from_str(&response.text().await?)?;
 
   let search = SearchPoints {
