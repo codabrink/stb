@@ -20,6 +20,9 @@ fn main() {
   if args.rebuild_vector {
     init::rebuild_vector().expect("could not init");
   }
+  if args.export_vector {
+    init::export_vector().expect("Could not export from qdrant");
+  }
 
   if let Some(query) = &args.search {
     search::search_blocking(query, 10).expect("Could not search");

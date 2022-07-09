@@ -3,8 +3,14 @@ services:
   web:
     build: .
     ports:
-      - "8080:8080"
+      - 8080:8080
+    volumes:
+      - ./db.sqlite:/code/db.sqlite
   embedder:
     build: ./embedder
   qdrant:
     image: "qdrant/qdrant"
+    volumes:
+      - ./qdrant/qdrant.tar:/qdrant.tar
+      - ./qdrant/restore.sh:/restore.sh
+    entrypoint: "sh -c /restore.sh"

@@ -1,2 +1,2 @@
 #!/bin/bash
-poetry run uvicorn embedder.embedding_server:app --reload
+poetry run uvicorn embedder.embedding_server:app --reload --workers 8

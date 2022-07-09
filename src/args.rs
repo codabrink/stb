@@ -11,6 +11,9 @@ pub struct Args {
   #[clap(long)]
   pub rebuild_vector: bool,
 
+  #[clap(long)]
+  pub export_vector: bool,
+
   #[clap(long, short)]
   pub server: bool,
 

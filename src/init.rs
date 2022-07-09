@@ -1,4 +1,5 @@
 use anyhow::Result;
+use futures::{stream, StreamExt};
 use glob::glob;
 use qdrant_client::{prelude::*, qdrant::Distance};
 use regex::Regex;
@@ -103,28 +104,52 @@ pub async fn rebuild_vector() -> Result<()> {
     })
   })?;
 
-  let mut points: Vec<PointStruct> = Vec::new();
+  let reqwest_client = reqwest::Client::new();
+  let bodies = stream::iter(verse_iter)
+    .map(|v| {
+      let client = &reqwest_client;
+      async move {
+        let v = v?;
+        let url = format!("http://localhost:8000/embed?q={}", v.content);
+        let resp = client.get(url).send().await?;
+        println!(
+          "Gathered embedding for {} Chapter {} Verse {}",
+          v.book, v.chapter, v.verse
+        );
+        Ok((v, resp.text().await?))
+      }
+    })
+    .buffer_unordered(8);
 
-  for verse in verse_iter {
-    let verse = verse?;
-    let response = reqwest::get(format!("http://localhost:8000/embed?q={}", verse.content)).await?;
+  let verses: Vec<Result<(Verse, String)>> = bodies.collect().await;
+  let mut points = Vec::new();
 
-    let embedding: Embedding = serde_json::from_str(&response.text().await?)?;
-    println!(
-      "Gathered embedding for {} Chapter {} Verse {}",
-      verse.book, verse.chapter, verse.verse
-    );
-
-    points.push(PointStruct::new(
-      verse.id,
-      embedding.embedding,
-      Payload::new(),
-    ));
+  for verse in verses {
+    if let Ok((verse, text)) = verse {
+      let embedding: Embedding = serde_json::from_str(&text)?;
+      points.push(PointStruct::new(
+        verse.id,
+        embedding.embedding,
+        Payload::new(),
+      ));
+    }
   }
 
   println!("Upserting points...");
   client.upsert(COLLECTION_NAME, points).await?;
   println!("Upserted.");
+
+  Ok(())
+}
+
+#[tokio::main]
+pub async fn export_vector() -> Result<()> {
+  let mut client = QdrantClient::new(None).await?;
+
+  client.create_snapshot(COLLECTION_NAME).await?;
+  client
+    .download_snapshot("db/qdrant.tar", COLLECTION_NAME, None, None)
+    .await?;
 
   Ok(())
 }
