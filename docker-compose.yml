@@ -12,4 +12,4 @@ services:
     image: "qdrant/qdrant"
     volumes:
       - ./qdrant/qdrant.tar:/qdrant.tar
-    entrypoint: "sh -c '/qdrant/qdrant --snapshot /qdrant.tar:verses'"
+    command: "sh -c '/qdrant/qdrant --snapshot /qdrant.tar:verses'"
