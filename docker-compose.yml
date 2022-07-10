@@ -11,5 +11,5 @@ services:
   qdrant:
     image: "qdrant/qdrant"
     volumes:
-      - ./qdrant/qdrant.tar:/qdrant.tar
-    command: "sh -c '/qdrant/qdrant --snapshot /qdrant.tar:verses'"
+      - ./qdrant:/snapshots
+    entrypoint: "sh -c '/qdrant/qdrant --snapshot /snapshots/qdrant.tar:verses'"
