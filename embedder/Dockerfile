@@ -6,7 +6,6 @@ WORKDIR /code
 COPY poetry.lock pyproject.toml /code/
 RUN poetry config virtualenvs.create false \
   && poetry install --no-dev --no-interaction --no-ansi
-# RUN apk update && apk add gcc g++ libc-dev libffi-dev
+RUN python -c 'from sentence_transformers import SentenceTransformer; SentenceTransformer("multi-qa-mpnet-base-dot-v1") '
 COPY . /code
-# RUN pip install poetry && poetry install --no-dev --no-interaction --no-ansi
-CMD uvicorn embedder.embedding_server:app --host 0.0.0.0 --workers 4
+CMD uvicorn embedder.embedding_server:app --host 0.0.0.0 --workers 2

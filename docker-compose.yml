@@ -2,19 +2,36 @@ version: "3.9"
 services:
   web:
     image: codabrink/stb
+    environment:
+      - QDRANT_HOST=qdrant
+      - EMBEDDER_HOST=embedder
     ports:
       - 8080:8080
     volumes:
-      - ./db.sqlite:/code/db.sqlite
+      - ./db.sqlite:/code/db.sqlite:Z
+    depends_on:
+      - embedder
+      - qdrant
+    networks:
+      - stb-net
   embedder:
-    build: ./embedder
-    ports:
-      - 8000:8000
+    image: codabrink/embedder
+    deploy:
+      resources:
+        reservations:
+          memory: 512M
+    networks:
+      - stb-net
   qdrant:
     image: "qdrant/qdrant"
     volumes:
-      - ./qdrant/qdrant.tar:/snapshots/qdrant.tar:Z
+      - ./qdrant.tar:/snapshots/qdrant.tar:Z
     command: "/qdrant/qdrant --force-snapshot --snapshot /snapshots/qdrant.tar:verses"
+    networks:
+      - stb-net
     ports:
-      - 6333:6333
       - 6334:6334
+
+networks:
+  stb-net:
+    name: stb-net
