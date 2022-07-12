@@ -12,4 +12,4 @@ services:
     image: "qdrant/qdrant"
     volumes:
       - ./qdrant/qdrant.tar:/snapshots/qdrant.tar:Z
-    command: "/qdrant/qdrant --snapshot /snapshots/qdrant.tar:verses"
+    command: "/qdrant/qdrant --force-snapshot /snapshots/qdrant.tar:verses"
