@@ -8,8 +8,13 @@ services:
       - ./db.sqlite:/code/db.sqlite
   embedder:
     build: ./embedder
+    ports:
+      - 8000:8000
   qdrant:
     image: "qdrant/qdrant"
     volumes:
       - ./qdrant/qdrant.tar:/snapshots/qdrant.tar:Z
     command: "/qdrant/qdrant --force-snapshot --snapshot /snapshots/qdrant.tar:verses"
+    ports:
+      - 6333:6333
+      - 6334:6334
