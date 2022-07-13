@@ -1,5 +1,5 @@
-use crate::search::search;
-use actix_web::{get, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use crate::{init::Verse, search::search};
+use actix_web::{get, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use qstring::QString;
 
 #[get("/")]
@@ -25,10 +25,28 @@ async fn root(req: HttpRequest) -> impl Responder {
     .body(body)
 }
 
+#[get("/book/{slug}/{chapter}")]
+async fn chapter(
+  // req: HttpRequest,
+  info: web::Path<(String, u64)>,
+) -> impl Responder {
+  let (slug, chapter) = info.into_inner();
+  let verses = Verse::query(&slug, chapter, None).unwrap();
+  let resp = verses
+    .into_iter()
+    .map(|v| v.content)
+    .collect::<Vec<String>>()
+    .join("<br />");
+
+  HttpResponse::Ok()
+    .content_type("text/html; charset=utf-8")
+    .body(resp)
+}
+
 #[actix_web::main]
 pub async fn boot_server() -> std::io::Result<()> {
   println!("Running server.");
-  HttpServer::new(|| App::new().service(root))
+  HttpServer::new(|| App::new().service(root).service(chapter))
     .bind(("0.0.0.0", 8080))?
     .run()
     .await
