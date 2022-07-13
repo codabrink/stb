@@ -148,7 +148,7 @@ pub async fn export_vector() -> Result<()> {
 
   client.create_snapshot(COLLECTION_NAME).await?;
   client
-    .download_snapshot("db/qdrant.tar", COLLECTION_NAME, None, None)
+    .download_snapshot("qdrant.tar", COLLECTION_NAME, None, None)
     .await?;
 
   Ok(())
