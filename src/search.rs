@@ -1,5 +1,5 @@
 use super::init::{Embedding, Verse, COLLECTION_NAME};
-use crate::init::SQLITE_DB;
+use crate::{embedder_host, init::SQLITE_DB, qdrant_host};
 use anyhow::Result;
 use qdrant_client::prelude::*;
 use rusqlite::{params, Connection};
@@ -10,7 +10,7 @@ pub async fn search_blocking(query: impl ToString, limit: usize) -> Result<Vec<V
 }
 
 pub async fn search(query: impl ToString, limit: usize) -> Result<Vec<Verse>> {
-  let host = std::option_env!("QDRANT_HOST").unwrap_or("localhost");
+  let host = qdrant_host();
   println!("Qdrant host: {}", host);
   let config = QdrantClientConfig {
     uri: format!("http://{}:6334", host),
@@ -21,7 +21,7 @@ pub async fn search(query: impl ToString, limit: usize) -> Result<Vec<Verse>> {
   let conn = Connection::open(SQLITE_DB)?;
   let query = query.to_string();
 
-  let host = std::option_env!("EMBEDDER_HOST").unwrap_or("localhost");
+  let host = embedder_host();
   println!("Embedder host: {}", host);
   let response = reqwest::get(format!("http://{}:8000/embed?q={}", host, &query)).await?;
   let embedding: Embedding = serde_json::from_str(&response.text().await?)?;

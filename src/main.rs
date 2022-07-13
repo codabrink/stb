@@ -7,7 +7,28 @@ mod http;
 mod init;
 mod search;
 
+static mut QDRANT_HOST: String = String::new();
+static mut EMBEDDER_HOST: String = String::new();
+
+pub fn qdrant_host() -> &'static str {
+  unsafe { &QDRANT_HOST }
+}
+pub fn embedder_host() -> &'static str {
+  unsafe { &EMBEDDER_HOST }
+}
+
 fn main() {
+  unsafe {
+    QDRANT_HOST = match std::env::var("QDRANT_HOST") {
+      Ok(host) => host,
+      _ => String::from("localhost"),
+    };
+    EMBEDDER_HOST = match std::env::var("EMBEDDER_HOST") {
+      Ok(host) => host,
+      _ => String::from("localhost"),
+    }
+  }
+
   let args = args::Args::parse();
 
   if args.rebuild {
