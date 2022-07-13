@@ -39,15 +39,16 @@ pub async fn search(query: impl ToString, limit: usize) -> Result<Vec<Verse>> {
   for result in result.result {
     if let Some(point_id::PointIdOptions::Num(v)) = result.id.unwrap().point_id_options {
       let verse: Verse = conn.query_row(
-        "SELECT content, book, chapter, verse FROM verses WHERE id = (?1)",
+        "SELECT content, book, slug, chapter, verse FROM verses WHERE id = (?1)",
         params![v],
         |row| {
           Ok(Verse {
             id: v,
             content: row.get(0)?,
             book: row.get(1)?,
-            chapter: row.get(2)?,
-            verse: row.get(3)?,
+            slug: row.get(2)?,
+            chapter: row.get(3)?,
+            verse: row.get(4)?,
           })
         },
       )?;

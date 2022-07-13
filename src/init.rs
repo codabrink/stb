@@ -17,12 +17,15 @@ pub async fn rebuild_sql() -> Result<()> {
   conn.execute(
     "
     CREATE TABLE verses (
-      id INTEGER PRIMARY KEY,
+      id         INTEGER PRIMARY KEY,
+      slug       TEXT NOT NULL,
       book       TEXT NOT NULL,
       chapter    INTEGER NOT NULL,
       verse      INTEGER NOT NULL,
       content    TEXT NOT NULL
-    )",
+    );
+    CREATE INDEX idx_verses ON verses (slug, chapter, verse);
+    ",
     [],
   )?;
 
@@ -30,6 +33,10 @@ pub async fn rebuild_sql() -> Result<()> {
 
   for entry in glob("bible/eng-web_*.txt").expect("Failed to read Bible directory") {
     let entry = entry?;
+    let file_name = entry.file_name().unwrap().to_string_lossy().to_string();
+
+    let slug = file_name.split('_').nth(2).unwrap();
+
     let text_file = std::fs::read_to_string(&entry)?;
     let lines: Vec<&str> = text_file.split('\n').collect();
 
@@ -37,8 +44,9 @@ pub async fn rebuild_sql() -> Result<()> {
     let chapter = &chapter_regex.captures(&lines[1]).unwrap()[1];
 
     println!(
-      "Book: {}, Chapter: {}, file name: {}",
+      "Book: {} ({}), Chapter: {}, file name: {}",
       book,
+      slug,
       chapter,
       entry.file_name().unwrap().to_string_lossy()
     );
@@ -50,8 +58,8 @@ pub async fn rebuild_sql() -> Result<()> {
       }
 
       conn.execute(
-        "INSERT INTO verses (book, chapter, verse, content) VALUES (?1, ?2, ?3, ?4)",
-        params![book, chapter, verse, line],
+        "INSERT INTO verses (book, slug, chapter, verse, content) VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![book, slug, chapter, verse, line],
       )?;
 
       verse += 1;
@@ -66,6 +74,7 @@ pub struct Verse {
   pub verse: u64,
   pub chapter: u64,
   pub book: String,
+  pub slug: String,
   pub content: String,
 }
 
@@ -92,15 +101,16 @@ pub async fn rebuild_vector() -> Result<()> {
     .await?;
 
   let conn = Connection::open(SQLITE_DB)?;
-  let mut stmt = conn.prepare("SELECT id, book, chapter, verse, content FROM verses")?;
+  let mut stmt = conn.prepare("SELECT id, book, slug, chapter, verse, content FROM verses")?;
 
   let verse_iter = stmt.query_map([], |row| {
     Ok(Verse {
       id: row.get(0)?,
       book: row.get(1)?,
-      chapter: row.get(2)?,
-      verse: row.get(3)?,
-      content: row.get(4)?,
+      slug: row.get(2)?,
+      chapter: row.get(3)?,
+      verse: row.get(4)?,
+      content: row.get(5)?,
     })
   })?;
 
