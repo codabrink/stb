@@ -1,23 +1,15 @@
-<!DOCTYPE html>
-<html>
+{% extends "base" %}
 
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
-  <title>Search the Book</title>
-</head>
-
-<body>
+{% block content %}
   <form action="/" method="GET">
     <input type="text" name="q" />
   </form>
 
   {% if verses %}
     {% for v in verses %}
+      <strong>{{ v.book }} {{ v.chapter }}:{{ v.verse }} -</strong>
       {{ v.content }}
       <br />
     {% endfor %}
   {% endif %}
-</body>
-
-</html>
+{% endblock content %}

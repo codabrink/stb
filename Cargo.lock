@@ -2051,6 +2051,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "sass-rocket-fairing"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26f58d396172ec79872cde8076196dc89ce91f1a225a0811ba336abcec0e2174"
+dependencies = [
+ "normpath",
+ "notify",
+ "rocket",
+ "sass-rs",
+ "walkdir",
+]
+
+[[package]]
+name = "sass-rs"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cabcf7c6e55053f359911187ac401409aad2dc14338cae972dec266fee486abd"
+dependencies = [
+ "libc",
+ "sass-sys",
+]
+
+[[package]]
+name = "sass-sys"
+version = "0.4.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "933bca23b402377f0ab71e79732a826deffc748013746ac3314f6abc7f9fc51c"
+dependencies = [
+ "cc",
+ "libc",
+ "num_cpus",
+ "pkg-config",
+]
+
+[[package]]
 name = "schannel"
 version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2255,6 +2290,7 @@ dependencies = [
  "rocket",
  "rocket_dyn_templates",
  "rusqlite",
+ "sass-rocket-fairing",
  "serde",
  "serde_json",
  "tera",

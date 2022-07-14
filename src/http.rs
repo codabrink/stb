@@ -5,6 +5,7 @@ use rocket::fs::{relative, FileServer, TempFile};
 use rocket::http::{ContentType, RawStr, Status};
 use rocket::time::Date;
 use rocket::{Build, Rocket};
+use sass_rocket_fairing::SassFairing;
 
 use rocket_dyn_templates::{context, Template};
 
@@ -16,7 +17,7 @@ async fn index(q: Option<String>, limit: Option<usize>) -> Template {
     verses = Some(search(q, limit).await.expect("shoot"));
   }
 
-  Template::render("index", context! { verses })
+  Template::render("index", context! { verses, title: "Search" })
 }
 
 struct IndexContext {
@@ -34,6 +35,7 @@ pub async fn rocket() -> Result<()> {
   let _ = rocket::build()
     .mount("/", routes![index, chapter])
     .attach(Template::fairing())
+    .attach(SassFairing)
     .mount("/", FileServer::from(relative!("static")))
     .launch()
     .await?;
