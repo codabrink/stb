@@ -1,61 +1,42 @@
 use crate::{init::Verse, search::search};
-use actix_web::{get, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
-use qstring::QString;
+use anyhow::Result;
+use rocket::form::{Context, Contextual, Form, FromForm, FromFormField};
+use rocket::fs::{relative, FileServer, TempFile};
+use rocket::http::{ContentType, RawStr, Status};
+use rocket::time::Date;
+use rocket::{Build, Rocket};
 
-#[get("/")]
-async fn root(req: HttpRequest) -> impl Responder {
-  let query = QString::from(req.query_string());
+use rocket_dyn_templates::{context, Template};
 
-  let mut results = vec![];
-  let mut body = String::from(HTML);
-
-  if let Some(query) = query.get("q") {
-    let verses = search(query, 10).await.expect("handle later");
-
-    results = verses
-      .into_iter()
-      .map(|v| format!("{} {}:{} - {}", v.book, v.chapter, v.verse, v.content))
-      .collect::<Vec<String>>();
+#[get("/?<q>&<limit>")]
+async fn index(q: Option<String>, limit: Option<usize>) -> Template {
+  let mut verses: Option<Vec<Verse>> = None;
+  if let Some(q) = q {
+    let limit = limit.unwrap_or(20);
+    verses = Some(search(q, limit).await.expect("shoot"));
   }
 
-  body.push_str(&results.join("<br />"));
-  body.push_str("</body></html>");
-  HttpResponse::Ok()
-    .content_type("text/html; charset=utf-8")
-    .body(body)
+  Template::render("index", context! { verses })
 }
 
-#[get("/book/{slug}/{chapter}")]
-async fn chapter(
-  // req: HttpRequest,
-  info: web::Path<(String, u64)>,
-) -> impl Responder {
-  let (slug, chapter) = info.into_inner();
+struct IndexContext {
+  verses: Option<Vec<Verse>>,
+}
+
+#[get("/book/<slug>/<chapter>")]
+async fn chapter(slug: &str, chapter: u64) -> Template {
   let verses = Verse::query(&slug, chapter, None).unwrap();
-  let resp = verses
-    .into_iter()
-    .map(|v| v.content)
-    .collect::<Vec<String>>()
-    .join("<br />");
-
-  HttpResponse::Ok()
-    .content_type("text/html; charset=utf-8")
-    .body(resp)
+  Template::render("chapter", &Context::default())
 }
 
-#[actix_web::main]
-pub async fn boot_server() -> std::io::Result<()> {
-  println!("Running server.");
-  HttpServer::new(|| App::new().service(root).service(chapter))
-    .bind(("0.0.0.0", 8080))?
-    .run()
-    .await
-}
+#[rocket::main]
+pub async fn rocket() -> Result<()> {
+  let _ = rocket::build()
+    .mount("/", routes![index, chapter])
+    .attach(Template::fairing())
+    .mount("/", FileServer::from(relative!("static")))
+    .launch()
+    .await?;
 
-const HTML: &'static str = r#"
-  <html>
-    <body>
-      <form action="/" method="get">
-        <input type="text" name="q" />
-      </form>
-"#;
+  Ok(())
+}

@@ -1,0 +1,7 @@
+[default]
+limits.data-form = "2MiB"
+template_dir = "templates/"
+port = 8081
+
+[production]
+address = "0.0.0.0"

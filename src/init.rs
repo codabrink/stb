@@ -4,7 +4,7 @@ use glob::glob;
 use qdrant_client::{prelude::*, qdrant::Distance};
 use regex::Regex;
 use rusqlite::{params, Connection};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 pub const SQLITE_DB: &'static str = "db.sqlite";
 pub const COLLECTION_NAME: &'static str = "verses";
@@ -69,6 +69,7 @@ pub async fn rebuild_sql() -> Result<()> {
   Ok(())
 }
 
+#[derive(Serialize)]
 pub struct Verse {
   pub id: u64,
   pub verse: u64,

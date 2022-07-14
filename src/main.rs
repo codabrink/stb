@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate rocket;
+
 use clap::Parser;
 use std::thread;
 use std::time::Duration;
@@ -49,11 +52,9 @@ fn main() {
     search::search_blocking(query, 10).expect("Could not search");
   }
   if args.server {
-    http::boot_server().expect("Problem with the web server");
-
-    loop {
-      // do more later
-      thread::sleep(Duration::from_secs(1))
-    }
+    http::rocket().expect("Issue running http server");
+    // loop {
+    // thread::sleep(Duration::from_secs(1))
+    // }
   }
 }

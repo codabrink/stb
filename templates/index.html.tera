@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Search the Book</title>
+</head>
+
+<body>
+  <form action="/" method="GET">
+    <input type="text" name="q" />
+  </form>
+
+  {% if verses %}
+    {% for v in verses %}
+      {{ v.content }}
+      <br />
+    {% endfor %}
+  {% endif %}
+</body>
+
+</html>
