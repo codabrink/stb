@@ -1,2 +1,4 @@
 #!/bin/bash
+pip install poetry
+poetry install
 poetry run uvicorn embedder.embedding_server:app --reload --workers 8

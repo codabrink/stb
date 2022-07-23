@@ -147,7 +147,7 @@ pub async fn rebuild_vector() -> Result<()> {
   }
 
   println!("Upserting points...");
-  client.upsert(COLLECTION_NAME, points).await?;
+  client.upsert_points(COLLECTION_NAME, points).await?;
   println!("Upserted.");
 
   Ok(())

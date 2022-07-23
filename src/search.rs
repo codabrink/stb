@@ -34,7 +34,7 @@ pub async fn search(query: impl ToString, limit: usize) -> Result<Vec<Verse>> {
     limit: limit as u64,
     ..Default::default()
   };
-  let result = client.search(search).await?;
+  let result = client.search_points(search).await?;
 
   let mut verses = Vec::with_capacity(limit);
 

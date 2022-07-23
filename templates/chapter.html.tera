@@ -1,0 +1,11 @@
+{% extends "base" %}
+
+{% block content %}
+  <main>
+    <h2>{{verses[0].book}} {{verses[0].chapter}}</h2>
+    {% for v in verses %}
+      <sup>{{v.verse}}</sup>
+      {{ v.content }}
+    {% endfor %}
+  </main>
+{% endblock content %}

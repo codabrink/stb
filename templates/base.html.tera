@@ -3,9 +3,16 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
+    <link href="/css/main.css" rel="stylesheet" />
     <title>Search the Book - {{ title }}</title>
   </head>
   <body>
+    <div id="sidenav">
+      <form action="/" method="GET">
+        <input type="text" name="q" placeholder="Search the book..." />
+      </form>
+      {% block sidenav %}{% endblock sidenav %}
+    </div>
     {% block content %}{% endblock content %}
   </body>
 </html>
