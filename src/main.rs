@@ -31,6 +31,7 @@ fn main() {
   }
 
   let args = args::Args::parse();
+  directories();
 
   if args.rebuild {
     init::rebuild_sql().expect("Problem rebuilding sql");
@@ -55,4 +56,9 @@ fn main() {
     // thread::sleep(Duration::from_secs(1))
     // }
   }
+}
+
+fn directories() {
+  let _ = std::fs::create_dir_all("static/sass");
+  let _ = std::fs::create_dir_all("static/css");
 }
