@@ -22,8 +22,13 @@ async fn index(q: Option<String>, limit: Option<usize>) -> Template {
 
 #[get("/book/<slug>/<chapter>")]
 async fn chapter(slug: &str, chapter: u64) -> Template {
+  verse(slug, chapter, None).await
+}
+
+#[get("/book/<slug>/<chapter>/<verse>")]
+async fn verse(slug: &str, chapter: u64, verse: Option<u64>) -> Template {
   let verses = Verse::query(&slug, chapter, None).unwrap();
-  Template::render("chapter", context! { verses, title: &slug })
+  Template::render("chapter", context! { verses, title: &slug, verse })
 }
 
 #[rocket::main]

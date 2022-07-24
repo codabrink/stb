@@ -1,11 +1,21 @@
 {% extends "base" %}
 
 {% block content %}
+  {% if verse %}
+    <style>
+      .verse-{{verse}} {
+        background-color: yellow;
+      }
+    </style>
+  {% endif %}
+
   <main>
     <h2>{{verses[0].book}} {{verses[0].chapter}}</h2>
     {% for v in verses %}
-      <sup>{{v.verse}}</sup>
-      {{ v.content }}
+      <span class="verse verse-{{v.verse}}"">
+        <sup>{{v.verse}}</sup>
+        {{ v.content }}
+      </span>
     {% endfor %}
   </main>
 {% endblock content %}
