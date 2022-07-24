@@ -13,7 +13,7 @@ pub async fn search_blocking(query: impl ToString, limit: usize) -> Result<Vec<V
 
 pub async fn search(query: impl ToString, limit: usize) -> Result<Vec<Verse>> {
   let host = qdrant_host();
-  println!("Qdrant host: {}", host);
+  // println!("Qdrant host: {}", host);
   let config = QdrantClientConfig {
     uri: format!("http://{}:6334", host),
     ..Default::default()
@@ -24,7 +24,7 @@ pub async fn search(query: impl ToString, limit: usize) -> Result<Vec<Verse>> {
   let query = query.to_string();
 
   let host = embedder_host();
-  println!("Embedder host: {}", host);
+  // println!("Embedder host: {}", host);
   let response = reqwest::get(format!("http://{}:8000/embed?q={}", host, &query)).await?;
   let embedding: Embedding = serde_json::from_str(&response.text().await?)?;
 
@@ -55,10 +55,10 @@ pub async fn search(query: impl ToString, limit: usize) -> Result<Vec<Verse>> {
         },
       )?;
 
-      println!(
-        "{} chapter {}, verse {}: {}",
-        &verse.book, &verse.chapter, &verse.verse, &verse.content
-      );
+      // println!(
+      // "{} chapter {}, verse {}: {}",
+      // &verse.book, &verse.chapter, &verse.verse, &verse.content
+      // );
 
       verses.push(verse);
     }

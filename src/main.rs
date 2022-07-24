@@ -2,8 +2,6 @@
 extern crate rocket;
 
 use clap::Parser;
-use std::thread;
-use std::time::Duration;
 
 mod args;
 mod http;

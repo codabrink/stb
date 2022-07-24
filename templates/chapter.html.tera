@@ -10,7 +10,14 @@
   {% endif %}
 
   <main>
-    <h2>{{verses[0].book}} {{verses[0].chapter}}</h2>
+    <div class="header-container">
+      {% if chapter > 1 %}
+        <a id="prev" href="/book/{{slug}}/{{chapter - 1}}"><</a>
+      {% endif %}
+      <h2>{{verses[0].book}} {{verses[0].chapter}}</h2>
+      <a id="next" href="/book/{{slug}}/{{chapter + 1}}">></a>
+    </div>
+
     {% for v in verses %}
       <span class="verse verse-{{v.verse}}"">
         <sup>{{v.verse}}</sup>
