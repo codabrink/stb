@@ -30,7 +30,7 @@ services:
     image: "qdrant/qdrant"
     volumes:
       - ./qdrant.tar:/snapshots/qdrant.tar:Z
-    command: "/qdrant/qdrant --force-snapshot --snapshot /snapshots/qdrant.tar:verses"
+    # command: "/qdrant/qdrant --force-snapshot --snapshot /snapshots/qdrant.tar:verses"
     networks:
       - stb-net
     ports:

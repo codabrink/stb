@@ -32,16 +32,20 @@ pub async fn rebuild_sql() -> Result<()> {
   conn.execute(
     "
     CREATE TABLE books (
-      id INTEGER PRIMARY KEY,
-      slug TEXT NOT NULL,
-      name TEXT NOT NULL,
-
-    )
-    ",
+      id       INTEGER PRIMARY KEY,
+      slug     TEXT NOT NULL,
+      name     TEXT NOT NULL,
+      chapters INTEGER NOT NULL,
+      ord      INTEGER NOT NULL
+    );
+    CREATE INDEX idx_books ON books (order, slug);
+  ",
     [],
   )?;
 
   let chapter_regex = Regex::new(r"Chapter\s(\d+)\.")?;
+
+  let mut order = 0;
 
   for entry in glob("bible/eng-web_*.txt").expect("Failed to read Bible directory") {
     let entry = entry?;
@@ -54,6 +58,26 @@ pub async fn rebuild_sql() -> Result<()> {
 
     let book = &lines[0][..lines[0].len() - 1];
     let chapter = &chapter_regex.captures(&lines[1]).unwrap()[1];
+
+    {
+      let count: u64 = conn.query_row(
+        "SELECT COUNT(*) FROM books WHERE slug = (?1)",
+        params![slug],
+        |r| r.get(0),
+      )?;
+      if count == 0 {
+        conn.execute(
+          "INSERT INTO books (slug, name, chapters, ord) VALUES (?1, ?2, ?3, ?4);",
+          params![slug, book, 1, order],
+        )?;
+        order += 1;
+      } else {
+        conn.execute(
+          "UPDATE books SET chapters = chapters + 1 WHERE slug = (?1)",
+          params![slug],
+        )?;
+      }
+    }
 
     println!(
       "Book: {} ({}), Chapter: {}, file name: {}",
@@ -79,6 +103,15 @@ pub async fn rebuild_sql() -> Result<()> {
   }
 
   Ok(())
+}
+
+#[derive(Serialize)]
+pub struct Book {
+  pub id: u64,
+  pub slug: String,
+  pub name: String,
+  pub chapters: u64,
+  pub order: u64,
 }
 
 #[derive(Serialize)]
@@ -162,16 +195,23 @@ pub async fn rebuild_vector() -> Result<()> {
   client.upsert_points(COLLECTION_NAME, points).await?;
   println!("Upserted.");
 
+  println!("Exporting vector...");
+  export_vector()?;
+  println!("Exported");
+
   Ok(())
 }
 
 #[tokio::main]
 pub async fn export_vector() -> Result<()> {
+  let outfile = "qdrant.tar";
+
   let mut client = QdrantClient::new(None).await?;
+  let _ = std::fs::remove_file(outfile);
 
   client.create_snapshot(COLLECTION_NAME).await?;
   client
-    .download_snapshot("qdrant.tar", COLLECTION_NAME, None, None)
+    .download_snapshot(outfile, COLLECTION_NAME, None, None)
     .await?;
 
   Ok(())

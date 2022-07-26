@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM rust:1.61.0-alpine as build
+FROM rust:1.62.0-alpine as build
 RUN apk add --no-cache build-base cmake libressl-dev sqlite-dev
 WORKDIR /code
 COPY . .
