@@ -1,6 +1,6 @@
 use crate::{init::Verse, search::search};
 use anyhow::Result;
-use rocket::fs::{relative, FileServer};
+use rocket::fs::FileServer;
 use rocket_dyn_templates::{context, Template};
 use sass_rocket_fairing::SassFairing;
 
@@ -35,7 +35,7 @@ pub async fn rocket() -> Result<()> {
     .mount("/", routes![index, chapter, verse])
     .attach(Template::fairing())
     .attach(SassFairing::default())
-    .mount("/", FileServer::from(relative!("static")))
+    .mount("/", FileServer::from("static"))
     .launch()
     .await?;
 

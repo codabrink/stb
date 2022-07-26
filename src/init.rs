@@ -29,6 +29,18 @@ pub async fn rebuild_sql() -> Result<()> {
     [],
   )?;
 
+  conn.execute(
+    "
+    CREATE TABLE books (
+      id INTEGER PRIMARY KEY,
+      slug TEXT NOT NULL,
+      name TEXT NOT NULL,
+
+    )
+    ",
+    [],
+  )?;
+
   let chapter_regex = Regex::new(r"Chapter\s(\d+)\.")?;
 
   for entry in glob("bible/eng-web_*.txt").expect("Failed to read Bible directory") {
