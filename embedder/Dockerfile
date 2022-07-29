@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM python:3.8
+FROM python:3.8.13-slim-buster
 EXPOSE 8000
 RUN pip install poetry
 WORKDIR /code

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
-    <link href="/css/main.css" rel="stylesheet" />
+    <link href="/css/main.css" rel="stylesheet" type="text/css" />
     <title>Search the Book - {{ title }}</title>
   </head>
   <body>

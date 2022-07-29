@@ -1,0 +1,96 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  line-height: 1.5rem;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 1rem;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  scroll-snap-type: y mandatory;
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+}
+.header-container a:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+h2 {
+  margin: 1.5rem 0;
+}
+
+.logo {
+  font-style: italic;
+  font-weight: 900;
+  margin: 1rem;
+}
+
+form[action="/"] {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  width: 100%;
+  max-width: 30rem;
+}
+
+input[name=q] {
+  border: 1px solid #eee;
+  padding: 0.5rem;
+  width: 100%;
+}
+
+#sidenav {
+  box-sizing: border-box;
+  min-width: 20rem;
+  scroll-snap-align: start;
+  display: flex;
+  padding: 0.5rem;
+  justify-content: center;
+  box-shadow: inset rgba(0, 0, 0, 0.6) 0 -10px 20px -10px;
+  background: linear-gradient(to right, #f2709c, #ff9472);
+}
+
+main {
+  background-color: white;
+  padding: 2rem;
+  overflow-y: scroll;
+  flex-grow: 3;
+  line-height: 1.85rem;
+  max-width: 50rem;
+  margin: 0 auto;
+}
+main ul {
+  list-style-type: none;
+  padding: 0;
+}
+main ul li {
+  margin: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+a {
+  color: black;
+  text-decoration: none;
+  transition: all 200ms ease;
+  display: block;
+  padding: 1rem;
+}
+a:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.light {
+  font-weight: 300;
+}
+
+@font-face {
+  font-family: ProcreateSignature;
+  src: url("/ProcreateSignature.otf") format("opentype");
+}

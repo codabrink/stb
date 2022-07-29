@@ -1,8 +1,7 @@
 version: "3.9"
 services:
   stb:
-    build: .
-    # image: codabrink/stb
+    image: codabrink/stb
     environment:
       - QDRANT_HOST=qdrant
       - EMBEDDER_HOST=embedder
