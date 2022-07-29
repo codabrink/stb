@@ -51,10 +51,8 @@ fn main() {
     search::search_blocking(query, 10).expect("Could not search");
   }
   if args.server {
+    println!("Running http server...");
     http::rocket().expect("Issue running http server");
-    // loop {
-    // thread::sleep(Duration::from_secs(1))
-    // }
   }
 }
 

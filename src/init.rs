@@ -196,7 +196,7 @@ pub async fn rebuild_vector() -> Result<()> {
   println!("Upserted.");
 
   println!("Exporting vector...");
-  export_vector()?;
+  _export_vector().await?;
   println!("Exported");
 
   Ok(())
@@ -204,6 +204,10 @@ pub async fn rebuild_vector() -> Result<()> {
 
 #[tokio::main]
 pub async fn export_vector() -> Result<()> {
+  _export_vector().await
+}
+
+async fn _export_vector() -> Result<()> {
   let outfile = "qdrant.tar";
 
   let mut client = QdrantClient::new(None).await?;
