@@ -114,7 +114,7 @@ pub struct Book {
   pub order: u64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct Verse {
   pub id: u64,
   pub verse: u64,

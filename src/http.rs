@@ -1,4 +1,7 @@
-use crate::{init::Verse, search::search};
+use crate::{
+  init::{Book, Verse},
+  search::search,
+};
 use anyhow::Result;
 use rocket::fs::FileServer;
 use rocket_dyn_templates::{context, Template};
@@ -22,10 +25,26 @@ async fn chapter(slug: &str, chapter: u64) -> Template {
 
 #[get("/book/<slug>/<chapter>/<verse>")]
 async fn verse(slug: &str, chapter: u64, verse: Option<u64>) -> Template {
-  let verses = Verse::query(&slug, chapter, None).unwrap();
+  let verses = Verse::query(slug, chapter, None).unwrap();
+  let book = Book::query(slug).unwrap();
+  let verse = verse.map(|v| verses[v.saturating_sub(1) as usize].clone());
+
+  let mut similar = None;
+  if let Some(verse) = &verse {
+    similar = Some(search(&verse.content, 5).await.unwrap());
+  }
+
   Template::render(
     "chapter",
-    context! { verses, title: &slug, verse, chapter, slug },
+    context! {
+      verses,
+      title: &slug,
+      book,
+
+      chapter,
+      verse,
+      similar
+    },
   )
 }
 

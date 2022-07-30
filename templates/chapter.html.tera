@@ -3,26 +3,43 @@
 {% block content %}
   {% if verse %}
     <style>
-      .verse-{{verse}} {
+      .verse-{{verse.verse}} {
         background-color: yellow;
       }
     </style>
   {% endif %}
 
   <main>
-    <div class="header-container">
-      {% if chapter > 1 %}
-        <a id="prev" href="/book/{{slug}}/{{chapter - 1}}"><</a>
-      {% endif %}
-      <h2>{{verses[0].book}} {{verses[0].chapter}}</h2>
-      <a id="next" href="/book/{{slug}}/{{chapter + 1}}">></a>
-    </div>
+    {% if verse %}
+      <div class="verse-box verse">
+        <h4>{{verse.book}} {{verse.chapter}}:{{verse.verse}}</h4>
+        {{verse.content}}
+      </div>
+
+      <div class="similar-verses">
+        <h2>Similar verses</h2>
+        <ul class="verses">
+          {% for v in similar %}
+            <li>
+              <a href="/book/{{v.slug}}/{{v.chapter}}/{{v.verse}}">
+                <h4>{{v.book}} {{v.chapter}}:{{v.verse}}</h4>
+                {{v.content}}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <h2>
+      Full Chapter of {{book.name}} {{chapter}}
+    </h2>
 
     {% for v in verses %}
-      <span class="verse verse-{{v.verse}}"">
-        <sup>{{v.verse}}</sup>
-        {{ v.content }}
-      </span>
+    <a href="/book/{{book.slug}}/{{v.chapter}}/{{v.verse}}" class="verse verse-{{v.verse}}"">
+      <sup>{{v.verse}}</sup>
+      {{ v.content }}
+    </a>
     {% endfor %}
   </main>
 {% endblock content %}

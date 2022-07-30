@@ -1,7 +1,11 @@
 use std::ops::Range;
 
 use super::init::{Embedding, Verse, COLLECTION_NAME};
-use crate::{embedder_host, init::SQLITE_DB, qdrant_host};
+use crate::{
+  embedder_host,
+  init::{Book, SQLITE_DB},
+  qdrant_host,
+};
 use anyhow::Result;
 use qdrant_client::prelude::*;
 use rusqlite::{params, Connection, Row};
@@ -97,5 +101,24 @@ impl Verse {
     }?;
 
     Ok(verses_iter.flat_map(|v| v).collect())
+  }
+}
+
+impl Book {
+  pub fn query(slug: &str) -> Result<Self> {
+    let conn = Connection::open(SQLITE_DB)?;
+    let query = "SELECT * FROM books WHERE slug = (?1)";
+
+    let parser = |row: &Row| {
+      Ok(Book {
+        id: row.get("id")?,
+        slug: row.get("slug")?,
+        name: row.get("name")?,
+        chapters: row.get("chapters")?,
+        order: row.get("ord")?,
+      })
+    };
+
+    Ok(conn.query_row(query, [slug], parser)?)
   }
 }

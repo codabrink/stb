@@ -8,11 +8,13 @@
   </head>
   <body>
     <div id="topnav">
-      <h1 title="Search The Book">stb</h1>
-      <form action="/" method="GET">
-        <input type="text" name="q" placeholder="Search the book..." />
-      </form>
-      {% block sidenav %}{% endblock sidenav %}
+      <div>
+        <h1 title="Search The Book">stb</h1>
+        <form action="/" method="GET">
+          <input type="text" name="q" placeholder="Search the book... (Press s to focus)" />
+        </form>
+        {% block sidenav %}{% endblock sidenav %}
+      </div>
     </div>
     {% block content %}{% endblock content %}
 

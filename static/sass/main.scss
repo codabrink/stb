@@ -1,3 +1,7 @@
+$hover-color: rgba(0, 0, 0, .2);
+$blue: rgb(36, 70, 113);
+$similar-verses: rgb(36, 70, 113, 0.2);
+
 html,
 body {
   margin: 0;
@@ -17,16 +21,7 @@ body {
   scroll-snap-type: y mandatory;
 }
 
-.header-container {
-  display: flex;
-  align-items: center;
 
-  a {
-    &:hover {
-      background-color: rgba(0, 0, 0, 0.2);
-    }
-  }
-}
 
 h1,
 h2,
@@ -65,18 +60,19 @@ input[name=q] {
 }
 
 #topnav {
-  box-sizing: border-box;
-  min-width: 20rem;
-  scroll-snap-align: start;
-  display: flex;
-  justify-content: center;
-
   box-shadow: inset rgba(0, 0, 0, 0.2) 0 -10px 20px -10px;
   background: #244671;
 
   h1 {
     color: #fff;
     font-weight: 900;
+    margin-left: 1rem;
+  }
+
+  >div {
+    max-width: 50rem;
+    display: flex;
+    margin: 0 auto;
   }
 }
 
@@ -88,19 +84,49 @@ main {
   padding: 0 0 2rem;
   margin: 0 auto;
 
-  ul {
-    list-style-type: none;
-    padding: 0;
 
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+
+  li {
+    margin: 0;
+  }
+
+  &.verses {
     li {
-      margin: 0;
+      display: block;
+      margin: 1rem 0;
 
       h4 {
         margin: 0;
         font-size: 1.15rem;
       }
-
     }
+  }
+}
+
+
+.verse-box {
+  background: rgba(0, 0, 0, .1);
+  border: 1px solid rgba(0, 0, 0, .4);
+  padding: 1rem;
+  margin: 1rem 0;
+
+  h4 {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+}
+
+.similar-verses {
+  background: $similar-verses;
+  padding: 1rem;
+
+  h2 {
+    margin: 0;
   }
 }
 
@@ -108,12 +134,9 @@ a {
   color: black;
   text-decoration: none;
   transition: all 200ms ease;
-  display: block;
-  padding: 1rem;
 
   &:hover {
-    // text-decoration: underline;
-    background-color: rgba(0, 0, 0, 0.2);
+    text-decoration: underline;
   }
 }
 
@@ -124,8 +147,4 @@ a {
 @font-face {
   font-family: ProcreateSignature;
   src: url("/ProcreateSignature.otf") format("opentype");
-}
-
-.verse {
-  // cursor: pointer;
 }
