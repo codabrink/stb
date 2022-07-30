@@ -8,8 +8,7 @@
         {% for v in verses %}
           <li>
             <a href="/book/{{v.slug}}/{{v.chapter}}/{{v.verse}}">
-              {{v.book}} {{v.chapter}}:{{v.verse}}
-              <br />
+              <h4>{{v.book}} {{v.chapter}}:{{v.verse}}</h4>
               {{v.content}}
             </a>
           </li>

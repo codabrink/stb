@@ -7,7 +7,8 @@
     <title>Search the Book - {{ title }}</title>
   </head>
   <body>
-    <div id="sidenav">
+    <div id="topnav">
+      <h1 title="Search The Book">stb</h1>
       <form action="/" method="GET">
         <input type="text" name="q" placeholder="Search the book..." />
       </form>

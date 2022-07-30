@@ -4,7 +4,7 @@ html, body {
   height: 100%;
   width: 100%;
   line-height: 1.5rem;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Palatino", "Georgia", serif;
   font-size: 1rem;
 }
 
@@ -22,8 +22,12 @@ body {
   background-color: rgba(0, 0, 0, 0.2);
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Montserrat", sans-serif;
+}
+
 h2 {
-  margin: 1.5rem 0;
+  margin: 1.5rem 1rem;
 }
 
 .logo {
@@ -42,28 +46,31 @@ form[action="/"] {
 
 input[name=q] {
   border: 1px solid #eee;
+  box-shadow: 0 0 20px 0px rgba(0, 0, 0, 0.2);
   padding: 0.5rem;
   width: 100%;
 }
 
-#sidenav {
+#topnav {
   box-sizing: border-box;
   min-width: 20rem;
   scroll-snap-align: start;
   display: flex;
-  padding: 0.5rem;
   justify-content: center;
-  box-shadow: inset rgba(0, 0, 0, 0.6) 0 -10px 20px -10px;
-  background: linear-gradient(to right, #f2709c, #ff9472);
+  box-shadow: inset rgba(0, 0, 0, 0.2) 0 -10px 20px -10px;
+  background: #244671;
+}
+#topnav h1 {
+  color: #fff;
+  font-weight: 900;
 }
 
 main {
-  background-color: white;
-  padding: 2rem;
-  overflow-y: scroll;
+  background-color: #fff;
   flex-grow: 3;
   line-height: 1.85rem;
   max-width: 50rem;
+  padding: 0 0 2rem;
   margin: 0 auto;
 }
 main ul {
@@ -72,7 +79,10 @@ main ul {
 }
 main ul li {
   margin: 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.2);
+}
+main ul li h4 {
+  margin: 0;
+  font-size: 1.15rem;
 }
 
 a {
