@@ -11,8 +11,8 @@
 
   <main>
     {% if verse %}
+      <h1>{{verse.book}} {{verse.chapter}}:{{verse.verse}}</h1>
       <div class="verse-box verse">
-        <h4>{{verse.book}} {{verse.chapter}}:{{verse.verse}}</h4>
         {{verse.content}}
       </div>
 
@@ -34,6 +34,15 @@
     <h2>
       Full Chapter of {{book.name}} {{chapter}}
     </h2>
+    <div style="margin: -1rem 0 1rem 1rem;">
+      {% if chapter > 1 %}
+        <a id="prev" href="/book/{{book.slug}}/{{chapter - 1}}">Prev Chapter</a>
+      {% endif %} |
+      {% if chapter < book.chapters %}
+        <a id="next" href="/book/{{book.slug}}/{{chapter + 1}}">Next Chapter</a>
+      {% endif %}
+    </div>
+
 
     {% for v in verses %}
     <a href="/book/{{book.slug}}/{{v.chapter}}/{{v.verse}}" class="verse verse-{{v.verse}}"">
