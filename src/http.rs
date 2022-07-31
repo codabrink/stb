@@ -1,11 +1,13 @@
-use crate::{
-  init::{Book, Verse},
-  search::search,
-};
+use crate::{prelude::*, search::search};
 use anyhow::Result;
+use lazy_static::lazy_static;
 use rocket::fs::FileServer;
 use rocket_dyn_templates::{context, Template};
 use sass_rocket_fairing::SassFairing;
+
+lazy_static! {
+  pub static ref BOOKS: Vec<Book> = Book::all().unwrap();
+}
 
 #[get("/?<q>&<limit>")]
 async fn index(q: Option<String>, limit: Option<usize>) -> Template {
@@ -15,7 +17,15 @@ async fn index(q: Option<String>, limit: Option<usize>) -> Template {
     verses = Some(search(q, limit).await.expect("shoot"));
   }
 
-  Template::render("index", context! { verses, title: "Search", query: q })
+  Template::render(
+    "index",
+    context! {
+      verses,
+      title: "Search",
+      query: q,
+      all_books: &*BOOKS
+    },
+  )
 }
 
 #[get("/book/<slug>/<chapter>")]
@@ -43,7 +53,8 @@ async fn verse(slug: &str, chapter: u64, verse: Option<u64>) -> Template {
 
       chapter,
       verse,
-      similar
+      similar,
+      all_books: &*BOOKS
     },
   )
 }

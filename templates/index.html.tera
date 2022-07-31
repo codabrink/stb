@@ -2,7 +2,15 @@
 
 {% block content %}
   <main>
-    <h2><span class="light">Searching for</span> "{{query}}"</h2>
+
+    {% if query %}
+      <h2><span class="light">Searching for</span> "{{query}}"</h2>
+    {% else %}
+      <h2>Welcome to SearchTheBook - A semantic Bible search</h2>
+      <p>Search in the box above with a sentence, and the app will do it's best to find verses semantically similar to that sentence.</p>
+      <p>This app was made by Coda. If you find this app useful at all, please drop me an email at <a href="mailto:stb@kota.is">stb@kota.is</a> to let me know what you think of it.</p>
+    {% endif %}
+
     {% if verses %}
       <ul>
         {% for v in verses %}

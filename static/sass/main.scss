@@ -21,8 +21,6 @@ body {
   scroll-snap-type: y mandatory;
 }
 
-
-
 h1,
 h2,
 h3,
@@ -66,7 +64,7 @@ input[name=q] {
   h1 {
     color: #fff;
     font-weight: 900;
-    margin-left: 1rem;
+    margin-left: 0;
   }
 
   >div {
@@ -74,6 +72,10 @@ input[name=q] {
     display: flex;
     margin: 0 auto;
   }
+}
+
+#body {
+  display: flex;
 }
 
 main {

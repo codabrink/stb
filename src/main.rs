@@ -6,6 +6,8 @@ use clap::Parser;
 mod args;
 mod http;
 mod init;
+mod model;
+mod prelude;
 mod search;
 
 static mut QDRANT_HOST: String = String::new();

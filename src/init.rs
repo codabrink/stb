@@ -1,12 +1,13 @@
+use crate::prelude::*;
+
 use anyhow::Result;
 use futures::{stream, StreamExt};
 use glob::glob;
 use qdrant_client::{prelude::*, qdrant::Distance};
 use regex::Regex;
 use rusqlite::{params, Connection};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-pub const SQLITE_DB: &'static str = "db.sqlite";
 pub const COLLECTION_NAME: &'static str = "verses";
 
 #[tokio::main]
@@ -103,25 +104,6 @@ pub async fn rebuild_sql() -> Result<()> {
   }
 
   Ok(())
-}
-
-#[derive(Serialize)]
-pub struct Book {
-  pub id: u64,
-  pub slug: String,
-  pub name: String,
-  pub chapters: u64,
-  pub order: u64,
-}
-
-#[derive(Serialize, Clone)]
-pub struct Verse {
-  pub id: u64,
-  pub verse: u64,
-  pub chapter: u64,
-  pub book: String,
-  pub slug: String,
-  pub content: String,
 }
 
 #[derive(Deserialize)]

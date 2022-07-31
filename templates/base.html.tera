@@ -16,7 +16,9 @@
         {% block sidenav %}{% endblock sidenav %}
       </div>
     </div>
-    {% block content %}{% endblock content %}
+    <div id="body">
+      {% block content %}{% endblock content %}
+    </div>
 
     <script src="/js/main.js"></script>
   </body>

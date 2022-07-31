@@ -50,12 +50,16 @@ input[name=q] {
 #topnav h1 {
   color: #fff;
   font-weight: 900;
-  margin-left: 1rem;
+  margin-left: 0;
 }
 #topnav > div {
   max-width: 50rem;
   display: flex;
   margin: 0 auto;
+}
+
+#body {
+  display: flex;
 }
 
 main {
