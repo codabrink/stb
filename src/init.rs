@@ -3,12 +3,18 @@ use crate::prelude::*;
 use anyhow::Result;
 use futures::{stream, StreamExt};
 use glob::glob;
+use lazy_static::lazy_static;
 use qdrant_client::{prelude::*, qdrant::Distance};
 use regex::Regex;
+use reqwest::Client;
 use rusqlite::{params, Connection};
 use serde::Deserialize;
 
 pub const COLLECTION_NAME: &'static str = "verses";
+
+lazy_static! {
+  static ref SPLIT_REGEX: Regex = Regex::new(r",|\.").unwrap();
+}
 
 #[tokio::main]
 pub async fn rebuild_sql() -> Result<()> {
@@ -148,28 +154,67 @@ pub async fn rebuild_vector() -> Result<()> {
       let client = &reqwest_client;
       async move {
         let v = v?;
-        let url = format!("http://localhost:8000/embed?q={}", v.content);
-        let resp = client.get(url).send().await?;
+        let mut embeddings = Vec::new();
+
+        embeddings.push(embed(&v.content, client).await?);
+        let splits: Vec<String> = SPLIT_REGEX
+          .split(&v.content)
+          .map(|s| {
+            s.chars()
+              .filter(|c| *c == ' ' || c.is_ascii_alphanumeric())
+              .collect()
+          })
+          .collect();
+
+        if splits.len() > 1 {
+          for split in &splits {
+            if split.len() < 8 {
+              continue;
+            }
+            println!("SPLIT: {}", &split.trim());
+            embeddings.push(embed(split.trim(), client).await?);
+          }
+        }
+
+        for i in 1..(splits.len() - 1) {
+          let subverse = splits[i..]
+            .iter()
+            .map(|s| s.trim())
+            .collect::<Vec<&str>>()
+            .join(" ");
+
+          println!("SUBVERSE: {}", &subverse);
+          embeddings.push(embed(&subverse, client).await?);
+        }
+
         println!(
-          "Gathered embedding for {} Chapter {} Verse {}",
-          v.book, v.chapter, v.verse
+          "Gathered embedding for {} Chapter {} Verse {} ({} splits)",
+          v.book,
+          v.chapter,
+          v.verse,
+          &splits.len()
         );
-        Ok((v, resp.text().await?))
+
+        Ok((v, embeddings))
       }
     })
     .buffer_unordered(8);
 
-  let verses: Vec<Result<(Verse, String)>> = bodies.collect().await;
+  let verses: Vec<Result<(Verse, Vec<String>)>> = bodies.collect().await;
   let mut points = Vec::new();
 
+  let mut i = 0;
   for verse in verses {
-    if let Ok((verse, text)) = verse {
-      let embedding: Embedding = serde_json::from_str(&text)?;
-      points.push(PointStruct::new(
-        verse.id,
-        embedding.embedding,
-        Payload::new(),
-      ));
+    if let Ok((verse, embeddings)) = verse {
+      for embedding in embeddings {
+        let embedding: Embedding = serde_json::from_str(&embedding)?;
+        let mut payload = Payload::new();
+        payload.insert("id", verse.id as i64);
+
+        points.push(PointStruct::new(i, embedding.embedding, payload));
+
+        i += 1;
+      }
     }
   }
 
@@ -182,6 +227,12 @@ pub async fn rebuild_vector() -> Result<()> {
   println!("Exported");
 
   Ok(())
+}
+
+async fn embed(text: impl AsRef<str>, client: &Client) -> Result<String> {
+  let url = format!("http://localhost:8000/embed?q={}", text.as_ref());
+  let resp = client.get(url).send().await?;
+  Ok(resp.text().await?)
 }
 
 #[tokio::main]
