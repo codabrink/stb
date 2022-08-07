@@ -1751,7 +1751,7 @@ dependencies = [
 [[package]]
 name = "qdrant-client"
 version = "0.8.6"
-source = "git+https://github.com/codabrink/qdrant-rust-client.git#ddc3e8be0bc4db4785c3f452c2a63b18180ad0b3"
+source = "git+https://github.com/codabrink/qdrant-rust-client.git#d4d59733a06f16df5c19acc74606dacacd1a65ab"
 dependencies = [
  "anyhow",
  "prost",

@@ -160,7 +160,7 @@ pub async fn rebuild_vector() -> Result<()> {
           .split(&v.content)
           .map(|s| {
             s.chars()
-              .filter(|c| *c == ' ' || c.is_ascii_alphanumeric())
+              .filter(|c| *c == ' ' || *c == '\'' || c.is_ascii_alphanumeric())
               .collect()
           })
           .collect();
@@ -239,10 +239,10 @@ pub async fn export_vector() -> Result<()> {
 
 async fn _export_vector() -> Result<()> {
   let outfile = "qdrant.tar";
-
-  let client = QdrantClient::new(None).await?;
+  let _ = std::fs::remove_dir_all(outfile);
   let _ = std::fs::remove_file(outfile);
 
+  let client = QdrantClient::new(None).await?;
   client.create_snapshot(COLLECTION_NAME).await?;
   client
     .download_snapshot(outfile, COLLECTION_NAME, None, None)
