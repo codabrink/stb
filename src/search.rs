@@ -14,7 +14,7 @@ pub async fn search(query: impl ToString, limit: usize) -> Result<Vec<Verse>> {
     ..Default::default()
   };
 
-  let mut client = QdrantClient::new(Some(config)).await?;
+  let client = QdrantClient::new(Some(config)).await?;
   let conn = Connection::open(SQLITE_DB)?;
   let query = query.to_string();
 

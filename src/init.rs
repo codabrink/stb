@@ -1,6 +1,5 @@
 use crate::prelude::*;
 
-use anyhow::Result;
 use futures::{stream, StreamExt};
 use glob::glob;
 use lazy_static::lazy_static;
@@ -119,7 +118,7 @@ pub struct Embedding {
 
 #[tokio::main]
 pub async fn rebuild_vector() -> Result<()> {
-  let mut client = QdrantClient::new(None).await?;
+  let client = QdrantClient::new(None).await?;
 
   if client.has_collection(COLLECTION_NAME).await? {
     client.delete_collection(COLLECTION_NAME).await?;
@@ -149,7 +148,7 @@ pub async fn rebuild_vector() -> Result<()> {
   })?;
 
   let reqwest_client = reqwest::Client::new();
-  let bodies = stream::iter(verse_iter)
+  let mut bodies = stream::iter(verse_iter)
     .map(|v| {
       let client = &reqwest_client;
       async move {
@@ -195,32 +194,30 @@ pub async fn rebuild_vector() -> Result<()> {
           &splits.len()
         );
 
-        Ok((v, embeddings))
+        anyhow::Ok((v, embeddings))
       }
     })
     .buffer_unordered(8);
 
-  let verses: Vec<Result<(Verse, Vec<String>)>> = bodies.collect().await;
-  let mut points = Vec::new();
-
   let mut i = 0;
-  for verse in verses {
-    if let Ok((verse, embeddings)) = verse {
-      for embedding in embeddings {
-        let embedding: Embedding = serde_json::from_str(&embedding)?;
-        let mut payload = Payload::new();
-        payload.insert("id", verse.id as i64);
+  while let Some(b) = bodies.next().await {
+    let (v, embeddings) = b?;
+    let points = embeddings
+      .iter()
+      .map(|e| {
+        let e: Embedding = serde_json::from_str(e).unwrap();
 
-        points.push(PointStruct::new(i, embedding.embedding, payload));
+        let mut payload = Payload::new();
+        payload.insert("id", v.id as i64);
 
         i += 1;
-      }
-    }
-  }
+        PointStruct::new(i, e.embedding, payload)
+      })
+      .collect();
 
-  println!("Upserting points...");
-  client.upsert_points(COLLECTION_NAME, points).await?;
-  println!("Upserted.");
+    client.upsert_points(COLLECTION_NAME, points).await?;
+    println!("Upserted verse {}", i);
+  }
 
   println!("Exporting vector...");
   _export_vector().await?;
@@ -243,7 +240,7 @@ pub async fn export_vector() -> Result<()> {
 async fn _export_vector() -> Result<()> {
   let outfile = "qdrant.tar";
 
-  let mut client = QdrantClient::new(None).await?;
+  let client = QdrantClient::new(None).await?;
   let _ = std::fs::remove_file(outfile);
 
   client.create_snapshot(COLLECTION_NAME).await?;
