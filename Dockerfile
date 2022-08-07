@@ -6,7 +6,7 @@ WORKDIR /app
 COPY . .
 RUN cargo build --release
 
-FROM debian:buster-slim
+FROM debian:bullseye-slim
 RUN apt-get update && apt-get install -y sqlite openssl
 WORKDIR /stb
 COPY --from=builder /app/target/release/stb .
