@@ -19,6 +19,7 @@ pub async fn search(query: impl ToString, limit: usize) -> Result<Vec<Verse>> {
 
   let client = QdrantClient::new(Some(config)).await?;
   let conn = Connection::open(SQLITE_DB)?;
+  rusqlite::vtab::array::load_module(&conn)?;
   let query = query.to_string();
 
   let host = embedder_host();
@@ -36,38 +37,23 @@ pub async fn search(query: impl ToString, limit: usize) -> Result<Vec<Verse>> {
   };
   let result = client.search_points(search).await?;
 
-  let mut verses = Vec::with_capacity(limit);
-  let mut ids: Vec<i64> = result
+  let ids: Vec<rusqlite::types::Value> = result
     .result
     .iter()
     .map(|r| match r.payload.get("id") {
       Some(Value {
         kind: Some(Kind::IntegerValue(id)),
-      }) => *id,
+      }) => rusqlite::types::Value::Integer(*id),
       _ => panic!("There should always be an id"),
     })
     .collect();
+  let ids = Rc::new(ids);
 
-  // TODO: reduce to one query
-  ids.dedup();
-  for id in ids {
-    let verse: Verse = conn.query_row(
-      "SELECT DISTINCT content, book, slug, chapter, verse FROM verses WHERE id = (?1)",
-      params![id],
-      |row| {
-        Ok(Verse {
-          id: id as u64,
-          content: row.get(0)?,
-          book: row.get(1)?,
-          slug: row.get(2)?,
-          chapter: row.get(3)?,
-          verse: row.get(4)?,
-        })
-      },
-    )?;
-
-    verses.push(verse);
-  }
+  let mut stmt = conn.prepare("SELECT DISTINCT * FROM verses WHERE id IN rarray(?1)")?;
+  let verses = stmt
+    .query_map(params![ids], Verse::parse_row)?
+    .flat_map(|v| v)
+    .collect();
 
   Ok(verses)
 }

@@ -4,3 +4,4 @@ pub use anyhow::{bail, Result};
 pub use rusqlite::{params, Connection, Row};
 pub use serde::{Deserialize, Serialize};
 pub use std::ops::Range;
+pub use std::rc::Rc;
