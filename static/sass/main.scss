@@ -19,6 +19,10 @@ body {
   display: flex;
   flex-direction: column;
   scroll-snap-type: y mandatory;
+
+  >div {
+    padding: 0 1rem;
+  }
 }
 
 h1,

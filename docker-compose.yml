@@ -1,7 +1,13 @@
 version: "3.9"
 services:
+  nginx:
+    image: codabrink/nginx
+    ports:
+      - 80:8081
+    networks:
+      - stb-net
+    restart: always
   stb:
-    # build: .
     image: codabrink/stb
     environment:
       - QDRANT_HOST=qdrant
