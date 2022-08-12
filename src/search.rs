@@ -19,7 +19,6 @@ pub async fn search(query: impl ToString, limit: usize) -> Result<Vec<Verse>> {
 
   let client = QdrantClient::new(Some(config)).await?;
   let conn = Connection::open(SQLITE_DB)?;
-  rusqlite::vtab::array::load_module(&conn)?;
   let query = query.to_string();
 
   let host = embedder_host();

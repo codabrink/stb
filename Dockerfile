@@ -7,7 +7,7 @@ COPY . .
 RUN cargo build --release
 
 FROM debian:bullseye-slim
-RUN apt-get update && apt-get install -y sqlite3 openssl
+RUN apt-get update && apt-get install -y openssl
 WORKDIR /stb
 COPY --from=builder /app/target/release/stb .
 COPY ./static ./static
