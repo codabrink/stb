@@ -44,7 +44,7 @@ pub async fn search(query: impl ToString, limit: usize) -> Result<Vec<Verse>> {
     .map(|(i, r)| match r.payload.get("id") {
       Some(Value {
         kind: Some(Kind::IntegerValue(id)),
-      }) => format!("({}, {})", *id, i + 1),
+      }) => format!("({},{})", *id, i + 1),
       _ => unreachable!(),
     })
     .collect();
