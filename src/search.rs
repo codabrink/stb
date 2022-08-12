@@ -37,21 +37,22 @@ pub async fn search(query: impl ToString, limit: usize) -> Result<Vec<Verse>> {
   };
   let result = client.search_points(search).await?;
 
-  let ids: Vec<rusqlite::types::Value> = result
+  let cte: Vec<String> = result
     .result
     .iter()
-    .map(|r| match r.payload.get("id") {
+    .enumerate()
+    .map(|(i, r)| match r.payload.get("id") {
       Some(Value {
         kind: Some(Kind::IntegerValue(id)),
-      }) => rusqlite::types::Value::Integer(*id),
-      _ => panic!("There should always be an id"),
+      }) => format!("({}, {})", *id, i + 1),
+      _ => unreachable!(),
     })
     .collect();
-  let ids = Rc::new(ids);
 
-  let mut stmt = conn.prepare("SELECT DISTINCT * FROM verses WHERE id IN rarray(?1)")?;
+  let query = format!("WITH cte(id, ord) AS (VALUES {}) SELECT DISTINCT verses.* FROM verses INNER JOIN cte ON cte.id = verses.id ORDER BY cte.ord", cte.join(","));
+  let mut stmt = conn.prepare(&query)?;
   let verses = stmt
-    .query_map(params![ids], Verse::parse_row)?
+    .query_map([], Verse::parse_row)?
     .flat_map(|v| v)
     .collect();
 
