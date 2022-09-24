@@ -1774,10 +1774,12 @@ dependencies = [
 
 [[package]]
 name = "qdrant-client"
-version = "0.9.0"
-source = "git+https://github.com/codabrink/qdrant-rust-client.git#30b3816d823b3c0d6c9584d526155b10684766ab"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf02d926389570a3c95aa1c461e64f444393a9b2d0f432104109039398cde7c7"
 dependencies = [
  "anyhow",
+ "futures-util",
  "prost",
  "prost-types",
  "reqwest",
@@ -1917,6 +1919,7 @@ dependencies = [
  "serde_urlencoded",
  "tokio",
  "tokio-native-tls",
+ "tokio-util",
  "tower-service",
  "url",
  "wasm-bindgen",

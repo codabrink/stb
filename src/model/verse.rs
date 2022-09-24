@@ -1,3 +1,7 @@
+use std::fmt::Display;
+
+use rusqlite::MappedRows;
+
 use crate::prelude::*;
 
 #[derive(Serialize, Clone)]
@@ -6,14 +10,15 @@ pub struct Verse {
   pub verse: u64,
   pub chapter: u64,
   pub book: String,
-  pub slug: String,
+  pub book_slug: String,
+  pub book_order: u64,
   pub content: String,
 }
 
 impl Verse {
   pub fn query(slug: &str, chapter: u64, verses: Option<Range<u64>>) -> Result<Vec<Self>> {
     let conn = Connection::open(SQLITE_DB)?;
-    let mut query = String::from("SELECT * FROM verses WHERE slug = (?1) AND chapter = (?2) ");
+    let mut query = String::from("SELECT * FROM verses WHERE book_slug = (?1) AND chapter = (?2) ");
 
     let mut stmt;
     let verses_iter = if let Some(verses) = verses {
@@ -38,8 +43,15 @@ impl Verse {
       content: row.get("content")?,
       book: row.get("book")?,
       verse: row.get("verse")?,
-      slug: row.get("slug")?,
+      book_slug: row.get("book_slug")?,
       chapter: row.get("chapter")?,
+      book_order: row.get("book_order")?,
     })
+  }
+}
+
+impl Display for Verse {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{} {}:{}", self.book, self.chapter, self.verse)
   }
 }

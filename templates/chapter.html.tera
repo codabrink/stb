@@ -21,7 +21,7 @@
         <ul class="verses">
           {% for v in similar %}
             <li>
-              <a href="/book/{{v.slug}}/{{v.chapter}}/{{v.verse}}">
+              <a href="/book/{{v.book_slug}}/{{v.chapter}}/{{v.verse}}">
                 <h4>{{v.book}} {{v.chapter}}:{{v.verse}}</h4>
                 {{v.content}}
               </a>

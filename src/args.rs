@@ -6,7 +6,13 @@ pub struct Args {
   pub rebuild: bool,
 
   #[clap(long)]
+  pub eh: bool,
+
+  #[clap(long)]
   pub rebuild_sql: bool,
+
+  #[clap(long)]
+  pub collect_embeddings: bool,
 
   #[clap(long)]
   pub rebuild_vector: bool,

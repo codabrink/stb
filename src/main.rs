@@ -42,6 +42,12 @@ fn main() {
   if args.rebuild_sql {
     init::rebuild_sql().expect("could not init");
   }
+  if args.eh {
+    init::eh().unwrap();
+  }
+  if args.collect_embeddings {
+    init::collect_embeddings().expect("Could not collect embeddings");
+  }
   if args.rebuild_vector {
     init::rebuild_vector().expect("could not init");
   }
@@ -50,7 +56,7 @@ fn main() {
   }
 
   if let Some(query) = &args.search {
-    search::search_blocking(query, 10).expect("Could not search");
+    search::search_blocking(query, 10, true).expect("Could not search");
   }
   if args.server {
     println!("Running http server...");

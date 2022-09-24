@@ -23,7 +23,8 @@ services:
       - stb-net
     restart: always
   embedder:
-    image: codabrink/embedder
+    # image: codabrink/embedder
+    build: ./embedder
     deploy:
       resources:
         reservations:
