@@ -78,6 +78,23 @@ input[name=q] {
   }
 }
 
+#subnav {
+  background-color: rgba(200, 200, 200, 0.8);
+  font-family: "Montserrat", sans-serif;
+  padding: 0.5rem 0;
+
+  >div {
+    max-width: 50rem;
+    display: flex;
+    margin: 0 auto;
+  }
+
+  input,
+  label {
+    cursor: pointer;
+  }
+}
+
 #body {
   display: flex;
 }

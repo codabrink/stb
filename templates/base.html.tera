@@ -27,6 +27,12 @@
         {% block sidenav %}{% endblock sidenav %}
       </div>
     </div>
+    <div id="subnav">
+      <div>
+        <input type="checkbox" id="include_apocrypha" />
+        <label for="include_apocrypha">Include Apocrypha</label>
+      </div>
+    </div>
     <div id="body">
       {% block content %}{% endblock content %}
     </div>

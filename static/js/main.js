@@ -19,3 +19,10 @@ document.addEventListener("keydown", e => {
 })
 
 
+const apocrypha_checkbox = document.getElementById("include_apocrypha")
+const value = ('; '+document.cookie).split(`; include_apocrypha=`).pop().split(';')[0];
+
+apocrypha_checkbox.addEventListener('change', event => {
+  document.cookie = `include_apocrypha=${event.target.checked}`
+})
+apocrypha_checkbox.checked = (value == "true")
