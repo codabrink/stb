@@ -1,35 +1,44 @@
-pub use crate::prelude::*;
+use crate::init::pg;
+use anyhow::Result;
+use postgres::Row;
+use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct Book {
-  pub id: u64,
+  pub id: u32,
   pub slug: String,
   pub name: String,
-  pub chapters: u64,
-  pub order: u64,
+  pub chapters: u32,
+  pub order: u32,
 }
 
 impl Book {
   pub fn all() -> Result<Vec<Self>> {
-    let conn = Connection::open(SQLITE_DB)?;
-    let mut stmt = conn.prepare("SELECT * FROM books")?;
-    let rows = stmt.query_map([], Self::parse_row)?;
-    Ok(rows.flat_map(|b| b).collect())
+    Ok(
+      pg()?
+        .query("SELECT * FROM BOOKS", &[])?
+        .into_iter()
+        .map(Book::parse_row)
+        .collect(),
+    )
   }
 
   pub fn query(slug: &str) -> Result<Self> {
-    let conn = Connection::open(SQLITE_DB)?;
-    let query = "SELECT * FROM books WHERE slug = (?1) ORDER BY ord";
-    Ok(conn.query_row(query, [slug], Book::parse_row)?)
+    let row = pg()?.query_one(
+      "SELECT * FROM books WHERE slug = (?1) ORDER BY ord",
+      &[&slug],
+    )?;
+
+    Ok(Book::parse_row(row))
   }
 
-  fn parse_row(row: &Row) -> Result<Book, rusqlite::Error> {
-    Ok(Book {
-      id: row.get("id")?,
-      slug: row.get("slug")?,
-      name: row.get("name")?,
-      chapters: row.get("chapters")?,
-      order: row.get("ord")?,
-    })
+  fn parse_row(row: Row) -> Book {
+    Book {
+      id: row.get("id"),
+      slug: row.get("slug"),
+      name: row.get("name"),
+      chapters: row.get("chapters"),
+      order: row.get("ord"),
+    }
   }
 }

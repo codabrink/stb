@@ -6,22 +6,21 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rocket = { version = "0.5.0-rc.2", features = ["json"] }
-rocket_dyn_templates = { version = "0.1.0-rc.2", features = ["tera"] }
-sass-rocket-fairing = "0.2"
 anyhow = "1"
-clap = { version = "3", features = ["derive"] }
-qdrant-client = "0.10.1"
+clap = { version = "4", features = ["derive"] }
+postgres = "0.19"
 tokio = { version = "1", features = ["full"] }
+tokio-postgres = "0.7"
 glob = "0.3"
-rusqlite = { version = "0.28", features = ["bundled"] }
 regex = "1"
 reqwest = "0.11"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-futures = "0.3"
-tera = { version = "1", default-features = false }
 lazy_static = "1"
+rust-bert = "0.21"
+parking_lot = "0.12"
+rocket = { version = "0.5.0-rc.4", features = ["json"] }
+crossbeam-channel = "0.5"
 
 [target.x86_64-unknown-linux-gnu]
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+qrustflags = ["-C", "link-arg=-fuse-ld=lld"]
