@@ -2143,6 +2143,7 @@ dependencies = [
  "crossbeam-channel",
  "glob",
  "lazy_static",
+ "once_cell",
  "parking_lot",
  "postgres",
  "regex",

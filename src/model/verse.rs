@@ -1,8 +1,8 @@
-use crate::init::pg;
 use anyhow::Result;
-use postgres::Row;
 use serde::Serialize;
 use std::{fmt::Display, ops::Range};
+use tokio_postgres::NoTls;
+use tokio_postgres::{types::ToSql, Row};
 
 #[derive(Serialize, Clone)]
 pub struct Verse {
@@ -17,23 +17,36 @@ pub struct Verse {
 }
 
 impl Verse {
-  pub fn query(slug: &str, chapter: u32, verses: Option<Range<u32>>) -> Result<Vec<Self>> {
-    let mut client = pg()?;
+  pub async fn query(slug: &str, chapter: u32, verses: Option<Range<u32>>) -> Result<Vec<Self>> {
+    let (client, connection) =
+      tokio_postgres::connect("postgresql://postgres:postgres@localhost/stb", NoTls).await?;
+
+    // super bad, fix later
+    tokio::spawn(async move {
+      if let Err(e) = connection.await {
+        eprintln!("connection error: {}", e);
+      }
+    });
+
     let mut query = "SELECT * FROM verses WHERE book_slug = (?1) AND chapter = (?2) ".to_string();
 
     let rows = if let Some(verses) = verses {
       query.push_str("AND verse >= (?3) AND verse <= (?4) ORDER BY verse ASC");
-      client.query(&query, &[&slug, &chapter, &verses.start, &verses.end])?
+      client
+        .query(&query, &[&slug, &chapter, &verses.start, &verses.end])
+        .await?
     } else {
       query.push_str("ORDER BY verse ASC");
-      client.query(&query, &[&slug, &chapter])?
+      client.query(&query, &[&slug, &chapter]).await?
     };
 
-    Ok(rows.into_iter().map(Verse::parse_row).collect())
+    Ok(rows.into_iter().map(Verse::from).collect())
   }
+}
 
-  pub fn parse_row(row: Row) -> Self {
-    Verse {
+impl From<Row> for Verse {
+  fn from(row: Row) -> Self {
+    Self {
       id: row.get("id"),
       content: row.get("content"),
       book: row.get("book"),
@@ -41,7 +54,7 @@ impl Verse {
       book_slug: row.get("book_slug"),
       chapter: row.get("chapter"),
       book_order: row.get("book_order"),
-      distance: 0.,
+      distance: row.get("distance"),
     }
   }
 }

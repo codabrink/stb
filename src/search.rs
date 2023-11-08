@@ -9,6 +9,7 @@ use tokio::sync::oneshot::{self, Sender as OSSender};
 use tokio_postgres::NoTls;
 
 static mut TX: Option<Sender<(String, OSSender<Vec<f32>>)>> = None;
+
 static INIT_MODEL: Once = Once::new();
 
 // Create a channel to the worker thread for an embedding request
@@ -26,6 +27,7 @@ fn embed_tx() -> Sender<(String, OSSender<Vec<f32>>)> {
           let _ = tx.send(results.pop().unwrap());
         }
       });
+
       TX = Some(tx);
     });
     TX.as_ref().unwrap().clone()
@@ -60,7 +62,7 @@ pub async fn search(
       &format!(
         "
       WITH embeddings AS (
-        SELECT verse_id, embedding <-> '{embedding}' AS distance FROM embeddings ORDER BY embedding <-> '{embedding}' LIMIT 10
+        SELECT verse_id, embedding <-> '{embedding}' AS distance FROM embeddings ORDER BY distance LIMIT {limit}
       )
 
       SELECT *, embeddings.distance
