@@ -2750,7 +2750,6 @@ dependencies = [
  "deadpool-postgres",
  "glob",
  "hf-hub",
- "lazy_static",
  "once_cell",
  "parking_lot",
  "regex",

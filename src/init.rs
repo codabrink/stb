@@ -5,7 +5,6 @@ use candle_core::{Device, Module, Tensor};
 use crossbeam_channel::{unbounded, Sender};
 use deadpool_postgres::{Manager, Object};
 use glob::glob;
-use lazy_static::lazy_static;
 use regex::Regex;
 use rust_bert::pipelines::{
   sentence_embeddings::{
@@ -20,10 +19,9 @@ use tokio_postgres::NoTls;
 
 use candle_nn::VarBuilder;
 use candle_transformers::models::jina_bert::{BertModel, Config};
+use once_cell::sync::Lazy;
 
-lazy_static! {
-  static ref SPLIT_REGEX: Regex = Regex::new(r",|\.").unwrap();
-}
+static SPLIT_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r",|\.").unwrap());
 
 static mut TX: Option<Sender<(String, OSSender<String>)>> = None;
 static INIT_MODEL: Once = Once::new();
