@@ -2,56 +2,18 @@ use crate::db::POOL;
 use crate::model::Verse;
 use anyhow::{Error as E, Result};
 use candle_core::{Device, Module, Tensor};
-use crossbeam_channel::{unbounded, Sender};
-use deadpool_postgres::{Manager, Object};
-use glob::glob;
-use regex::Regex;
-use rust_bert::pipelines::{
-  sentence_embeddings::{
-    SentenceEmbeddingsBuilder, SentenceEmbeddingsModel, SentenceEmbeddingsModelType,
-  },
-  summarization::SummarizationModel,
-};
-use serde::Deserialize;
-use std::sync::Once;
-use tokio::sync::oneshot::{self, Sender as OSSender};
-use tokio_postgres::NoTls;
-
 use candle_nn::VarBuilder;
 use candle_transformers::models::jina_bert::{BertModel, Config};
+use deadpool_postgres::Object;
+use glob::glob;
 use once_cell::sync::Lazy;
+use regex::Regex;
+use rust_bert::pipelines::sentence_embeddings::{
+  SentenceEmbeddingsBuilder, SentenceEmbeddingsModel, SentenceEmbeddingsModelType,
+};
+use serde::Deserialize;
 
 static SPLIT_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r",|\.").unwrap());
-
-static mut TX: Option<Sender<(String, OSSender<String>)>> = None;
-static INIT_MODEL: Once = Once::new();
-
-// Create a channel to the worker thread for an embedding request
-fn sumarize_tx() -> Sender<(String, OSSender<String>)> {
-  unsafe {
-    INIT_MODEL.call_once(|| {
-      let (tx, rx) = unbounded::<(String, OSSender<String>)>();
-      std::thread::spawn(move || {
-        let mut model = SummarizationModel::new(Default::default()).unwrap();
-
-        for (string, tx) in rx {
-          let mut results = model.summarize(&[string]);
-          let _ = tx.send(results.pop().unwrap());
-        }
-      });
-
-      TX = Some(tx);
-    });
-    TX.as_ref().unwrap().clone()
-  }
-}
-
-pub async fn summarize(string: String) -> Result<String> {
-  let (os_tx, rx) = oneshot::channel();
-  let tx = sumarize_tx();
-  tx.send((string.to_string(), os_tx))?;
-  Ok(rx.await?)
-}
 
 pub async fn reset_db() -> Result<()> {
   let client = crate::db::connect(None).await?;
@@ -169,40 +131,6 @@ pub async fn rebuild_sql() -> Result<()> {
       verse += 1;
     }
   }
-
-  Ok(())
-}
-
-pub async fn summary() -> Result<()> {
-  let (client, connection) =
-    tokio_postgres::connect("postgresql://postgres:postgres@localhost/stb", NoTls).await?;
-
-  // TODO: super bad, fix later
-  tokio::spawn(async move {
-    if let Err(e) = connection.await {
-      eprintln!("connection error: {}", e);
-    }
-  });
-
-  let rows: Vec<Verse> = client
-    .query(
-      "SELECT * FROM verses WHERE book_slug = '1PE' AND chapter = 2 ORDER BY verse;",
-      &[],
-    )
-    .await?
-    .iter()
-    .map(Verse::from)
-    .collect();
-
-  let input = rows
-    .iter()
-    .map(|v| v.content.clone())
-    .collect::<Vec<String>>()
-    .join(" ");
-
-  let summary = summarize(input).await?;
-
-  println!("{summary}");
 
   Ok(())
 }
