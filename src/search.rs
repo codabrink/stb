@@ -45,7 +45,7 @@ pub async fn search(
   query: impl ToString,
   limit: usize,
   include_apocrypha: bool,
-) -> Result<Vec<(String, f64)>> {
+) -> Result<Vec<Verse>> {
   let (client, connection) =
     tokio_postgres::connect("postgresql://postgres:postgres@localhost/stb", NoTls).await?;
 
@@ -57,7 +57,7 @@ pub async fn search(
 
   let embedding = serde_json::to_string(&embed(query.to_string()).await?)?;
 
-  let rows: Vec<(String, f64)> = client
+  let rows: Vec<Verse> = client
     .query(
       &format!(
         "
@@ -73,8 +73,8 @@ pub async fn search(
       &[],
     )
     .await?
-    .iter()
-    .map(|r| (r.get("content"), r.get("distance")))
+    .into_iter()
+    .map(Verse::from)
     .collect();
 
   Ok(rows)

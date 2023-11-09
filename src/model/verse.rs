@@ -1,8 +1,7 @@
 use anyhow::Result;
 use serde::Serialize;
 use std::{fmt::Display, ops::Range};
-use tokio_postgres::NoTls;
-use tokio_postgres::{types::ToSql, Row};
+use tokio_postgres::{NoTls, Row};
 
 #[derive(Serialize, Clone)]
 pub struct Verse {
@@ -21,7 +20,7 @@ impl Verse {
     let (client, connection) =
       tokio_postgres::connect("postgresql://postgres:postgres@localhost/stb", NoTls).await?;
 
-    // super bad, fix later
+    // TODO: super bad, fix later
     tokio::spawn(async move {
       if let Err(e) = connection.await {
         eprintln!("connection error: {}", e);
@@ -44,8 +43,9 @@ impl Verse {
   }
 }
 
-impl From<Row> for Verse {
-  fn from(row: Row) -> Self {
+impl From<&Row> for Verse {
+  #[inline]
+  fn from(row: &Row) -> Self {
     Self {
       id: row.get("id"),
       content: row.get("content"),
@@ -54,8 +54,14 @@ impl From<Row> for Verse {
       book_slug: row.get("book_slug"),
       chapter: row.get("chapter"),
       book_order: row.get("book_order"),
-      distance: row.get("distance"),
+      distance: row.try_get("distance").unwrap_or(0.),
     }
+  }
+}
+
+impl From<Row> for Verse {
+  fn from(row: Row) -> Self {
+    Self::from(&row)
   }
 }
 

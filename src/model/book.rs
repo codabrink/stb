@@ -1,7 +1,7 @@
 use crate::init::pg;
 use anyhow::Result;
-use postgres::Row;
 use serde::Serialize;
+use tokio_postgres::Row;
 
 #[derive(Serialize)]
 pub struct Book {
@@ -13,21 +13,26 @@ pub struct Book {
 }
 
 impl Book {
-  pub fn all() -> Result<Vec<Self>> {
+  pub async fn all() -> Result<Vec<Self>> {
     Ok(
-      pg()?
-        .query("SELECT * FROM BOOKS", &[])?
+      pg()
+        .await?
+        .query("SELECT * FROM BOOKS", &[])
+        .await?
         .into_iter()
         .map(Book::parse_row)
         .collect(),
     )
   }
 
-  pub fn query(slug: &str) -> Result<Self> {
-    let row = pg()?.query_one(
-      "SELECT * FROM books WHERE slug = (?1) ORDER BY ord",
-      &[&slug],
-    )?;
+  pub async fn query(slug: &str) -> Result<Self> {
+    let row = pg()
+      .await?
+      .query_one(
+        "SELECT * FROM books WHERE slug = (?1) ORDER BY ord",
+        &[&slug],
+      )
+      .await?;
 
     Ok(Book::parse_row(row))
   }

@@ -1,11 +1,15 @@
 #[macro_use]
 extern crate rocket;
 
+use std::time::Duration;
+
 use anyhow::Result;
 // use clap::Parser;
 use http::rocket;
+use tokio_postgres::{Error, NoTls};
 
 mod args;
+mod db;
 mod http;
 mod init;
 mod model;
@@ -23,6 +27,10 @@ async fn main() -> Result<()> {
   // println!("{}", b);
   // }
 
-  rocket().await?;
+  // init::jina_embeddings()?;
+
+  // init::summary().await?;
+
+  // rocket().await?;
   Ok(())
 }
