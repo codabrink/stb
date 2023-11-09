@@ -17,15 +17,7 @@ pub struct Verse {
 
 impl Verse {
   pub async fn query(slug: &str, chapter: u32, verses: Option<Range<u32>>) -> Result<Vec<Self>> {
-    let (client, connection) =
-      tokio_postgres::connect("postgresql://postgres:postgres@localhost/stb", NoTls).await?;
-
-    // TODO: super bad, fix later
-    tokio::spawn(async move {
-      if let Err(e) = connection.await {
-        eprintln!("connection error: {}", e);
-      }
-    });
+    let client = crate::db::connect(None).await?;
 
     let mut query = "SELECT * FROM verses WHERE book_slug = (?1) AND chapter = (?2) ".to_string();
 

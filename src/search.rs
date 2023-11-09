@@ -46,14 +46,7 @@ pub async fn search(
   limit: usize,
   include_apocrypha: bool,
 ) -> Result<Vec<Verse>> {
-  let (client, connection) =
-    tokio_postgres::connect("postgresql://postgres:postgres@localhost/stb", NoTls).await?;
-
-  tokio::spawn(async move {
-    if let Err(e) = connection.await {
-      eprintln!("connection error: {}", e);
-    }
-  });
+  let client = crate::db::connect(None).await?;
 
   let embedding = serde_json::to_string(&embed(query.to_string()).await?)?;
 

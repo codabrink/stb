@@ -15,10 +15,9 @@ pub static POOL: Lazy<Pool> = Lazy::new(|| {
 });
 
 pub async fn connect(db: Option<&str>) -> Result<Client> {
-  let mut uri = "postgresql://postgres:postgres@localhost/".to_owned();
-  if let Some(db) = db {
-    uri.push_str(db);
-  }
+  let db = db.unwrap_or(DB);
+  let mut uri = format!("postgresql://postgres:postgres@localhost/{db}");
+
   let (client, connection) = tokio_postgres::connect(&uri, NoTls).await?;
 
   // This task will die when the client is dropped

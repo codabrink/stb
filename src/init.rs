@@ -16,11 +16,11 @@ use serde::Deserialize;
 static SPLIT_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r",|\.").unwrap());
 
 pub async fn reset_db() -> Result<()> {
-  let client = crate::db::connect(None).await?;
+  let client = crate::db::connect(Some("")).await?;
   let _ = client.execute("DROP DATABASE stb;", &[]).await;
   client.execute("CREATE DATABASE stb;", &[]).await?;
 
-  crate::db::connect(Some("stb"))
+  crate::db::connect(None)
     .await?
     .batch_execute("CREATE EXTENSION vector;")
     .await?;
