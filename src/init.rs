@@ -1,19 +1,18 @@
-use crate::db::POOL;
+use crate::model::embedding::Embedding;
 use crate::model::Verse;
+use crate::{db::POOL, model::embedding::Model};
 use anyhow::{Error as E, Result};
 use candle_core::{Device, Module, Tensor};
 use candle_nn::VarBuilder;
 use candle_transformers::models::jina_bert::{BertModel, Config};
 use deadpool_postgres::Object;
 use glob::glob;
-use once_cell::sync::Lazy;
 use regex::Regex;
 use rust_bert::pipelines::sentence_embeddings::{
   SentenceEmbeddingsBuilder, SentenceEmbeddingsModel, SentenceEmbeddingsModelType,
 };
-use serde::Deserialize;
-
-static SPLIT_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r",|\.").unwrap());
+use std::fs::OpenOptions;
+use std::io::prelude::*;
 
 pub async fn reset_db() -> Result<()> {
   let client = crate::db::connect(Some("")).await?;
@@ -135,17 +134,12 @@ pub async fn rebuild_sql() -> Result<()> {
   Ok(())
 }
 
-#[derive(Deserialize)]
-pub struct Embedding {
-  pub embedding: Vec<f32>,
-}
-
-pub struct Embeddings {
-  verse: u64,
-  chapter: u64,
-  slug: String,
-  embeddings: Vec<Embedding>,
-}
+// pub struct Embeddings {
+// verse: u64,
+// chapter: u64,
+// slug: String,
+// embeddings: Vec<Embedding>,
+// }
 
 pub async fn jina_embeddings() -> Result<()> {
   use hf_hub::{api::sync::Api, Repo, RepoType};
@@ -181,17 +175,24 @@ pub async fn jina_embeddings() -> Result<()> {
   const LIMIT: usize = 100;
   let fetch_statement = format!("FETCH {LIMIT} FROM curs;");
 
-  let mut transaction = client.transaction().await?;
+  let transaction = client.transaction().await?;
   transaction
     .batch_execute("DECLARE curs CURSOR FOR SELECT * FROM verses;")
     .await?;
+
+  let mut embedding_file = OpenOptions::new()
+    .write(true)
+    .append(true)
+    .create(true)
+    .open("jina_embeddings.json")?;
+  writeln!(embedding_file, "[")?;
 
   loop {
     let rows = transaction.query(&fetch_statement, &[]).await?;
 
     for row in &rows {
       let verse = Verse::from(row);
-      let fragments = shatter_verse(&verse)?;
+      let fragments = verse.shatter()?;
 
       for fragments in fragments.chunks(10) {
         if let Some(pp) = tokenizer.get_padding_mut() {
@@ -224,14 +225,17 @@ pub async fn jina_embeddings() -> Result<()> {
         for i in 0..n_fragments {
           let embedding = embeddings.get(i)?;
           let embedding: Vec<f32> = embedding.to_vec1()?;
+
+          let embedding = Embedding {
+            embedding,
+            id: 0,
+            verse_id: verse.id,
+            book_order: verse.book_order,
+            model: Model::JINA,
+          };
+
           let embedding = serde_json::to_string(&embedding)?;
-
-          transaction.execute(
-          &format!("INSERT INTO embeddings (verse_id, book_order, embedding, model) VALUES ($1, $2, '{embedding}', 1)"),
-          &[&verse.id, &verse.book_order],
-        ).await?;
-
-          println!("{embedding:?}");
+          writeln!(embedding_file, "{embedding},")?;
         }
       }
     }
@@ -241,51 +245,9 @@ pub async fn jina_embeddings() -> Result<()> {
     }
   }
 
+  writeln!(embedding_file, "]")?;
+
   Ok(())
-}
-
-fn shatter_verse(verse: &Verse) -> Result<Vec<String>> {
-  let mut fragments = vec![verse.content.clone()];
-
-  let splits: Vec<String> = SPLIT_REGEX
-    .split(&verse.content)
-    .map(|s| {
-      s.chars()
-        .filter(|c| *c == ' ' || *c == '\'' || c.is_ascii_alphanumeric())
-        .collect()
-    })
-    .collect();
-
-  if splits.len() > 1 {
-    for split in &splits {
-      if split.len() < 8 {
-        continue;
-      }
-      println!("SPLIT: {}", &split.trim());
-      fragments.push(split.trim().to_owned());
-    }
-  }
-
-  for i in 1..(splits.len() - 1) {
-    let subverse = splits[i..]
-      .iter()
-      .map(|s| s.trim())
-      .collect::<Vec<&str>>()
-      .join(" ");
-
-    println!("SUBVERSE: {}", &subverse);
-    fragments.push(subverse);
-  }
-
-  println!(
-    "Shattered verse {} {}:{} ({} splits)",
-    verse.book,
-    verse.chapter,
-    verse.verse,
-    &splits.len()
-  );
-
-  Ok(fragments)
 }
 
 pub async fn collect_embeddings() -> Result<()> {
@@ -317,7 +279,7 @@ pub async fn collect_embeddings() -> Result<()> {
         distance: 0.,
       };
 
-      let fragments = shatter_verse(&verse)?;
+      let fragments = verse.shatter()?;
       let embeddings = embed(fragments, &model)?;
 
       for embedding in embeddings {

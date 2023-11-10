@@ -27,7 +27,7 @@ async fn main() -> Result<()> {
   // println!("{}", b);
   // }
 
-  // init::jina_embeddings()?;
+  init::jina_embeddings().await?;
 
   // init::summary().await?;
 

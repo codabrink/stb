@@ -1,7 +1,11 @@
 use anyhow::Result;
+use once_cell::sync::Lazy;
+use regex::Regex;
 use serde::Serialize;
 use std::{fmt::Display, ops::Range};
-use tokio_postgres::{NoTls, Row};
+use tokio_postgres::Row;
+
+static SPLIT_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r",|\.").unwrap());
 
 #[derive(Serialize, Clone)]
 pub struct Verse {
@@ -17,7 +21,7 @@ pub struct Verse {
 
 impl Verse {
   pub async fn query(slug: &str, chapter: u32, verses: Option<Range<u32>>) -> Result<Vec<Self>> {
-    let client = crate::db::connect(None).await?;
+    let client = crate::db::POOL.get().await?;
 
     let mut query = "SELECT * FROM verses WHERE book_slug = (?1) AND chapter = (?2) ".to_string();
 
@@ -32,6 +36,50 @@ impl Verse {
     };
 
     Ok(rows.into_iter().map(Verse::from).collect())
+  }
+
+  pub fn shatter(&self) -> Result<Vec<String>> {
+    let mut fragments = vec![self.content.clone()];
+
+    let splits: Vec<String> = SPLIT_REGEX
+      .split(&self.content)
+      .map(|s| {
+        s.chars()
+          .filter(|c| *c == ' ' || *c == '\'' || c.is_ascii_alphanumeric())
+          .collect()
+      })
+      .collect();
+
+    if splits.len() > 1 {
+      for split in &splits {
+        if split.len() < 8 {
+          continue;
+        }
+        println!("SPLIT: {}", &split.trim());
+        fragments.push(split.trim().to_owned());
+      }
+    }
+
+    for i in 1..(splits.len() - 1) {
+      let subverse = splits[i..]
+        .iter()
+        .map(|s| s.trim())
+        .collect::<Vec<&str>>()
+        .join(" ");
+
+      println!("SUBVERSE: {}", &subverse);
+      fragments.push(subverse);
+    }
+
+    println!(
+      "Shattered verse {} {}:{} ({} splits)",
+      self.book,
+      self.chapter,
+      self.verse,
+      &splits.len()
+    );
+
+    Ok(fragments)
   }
 }
 

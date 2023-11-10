@@ -20,12 +20,12 @@ impl Book {
         .query("SELECT * FROM BOOKS", &[])
         .await?
         .into_iter()
-        .map(Book::parse_row)
+        .map(Book::from)
         .collect(),
     )
   }
 
-  pub async fn query(slug: &str) -> Result<Self> {
+  pub async fn fetch(slug: &str) -> Result<Self> {
     let row = pg()
       .await?
       .query_one(
@@ -34,16 +34,25 @@ impl Book {
       )
       .await?;
 
-    Ok(Book::parse_row(row))
+    Ok(row.into())
   }
+}
 
-  fn parse_row(row: Row) -> Book {
-    Book {
+impl From<&Row> for Book {
+  #[inline]
+  fn from(row: &Row) -> Self {
+    Self {
       id: row.get("id"),
       slug: row.get("slug"),
       name: row.get("name"),
       chapters: row.get("chapters"),
       order: row.get("ord"),
     }
+  }
+}
+
+impl From<Row> for Book {
+  fn from(row: Row) -> Self {
+    (&row).into()
   }
 }

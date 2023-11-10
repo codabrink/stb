@@ -46,7 +46,7 @@ pub async fn search(
   limit: usize,
   include_apocrypha: bool,
 ) -> Result<Vec<Verse>> {
-  let client = crate::db::connect(None).await?;
+  let client = crate::db::POOL.get().await?;
 
   let embedding = serde_json::to_string(&embed(query.to_string()).await?)?;
 
