@@ -13,6 +13,8 @@ use rust_bert::pipelines::sentence_embeddings::{
 };
 use std::fs::OpenOptions;
 use std::io::prelude::*;
+use tokio::fs::File;
+use tokio::io::{self, AsyncBufReadExt};
 
 pub async fn reset_db() -> Result<()> {
   let client = crate::db::connect(Some("")).await?;
@@ -134,13 +136,6 @@ pub async fn rebuild_sql() -> Result<()> {
   Ok(())
 }
 
-// pub struct Embeddings {
-// verse: u64,
-// chapter: u64,
-// slug: String,
-// embeddings: Vec<Embedding>,
-// }
-
 pub async fn jina_embeddings() -> Result<()> {
   use hf_hub::{api::sync::Api, Repo, RepoType};
 
@@ -180,12 +175,14 @@ pub async fn jina_embeddings() -> Result<()> {
     .batch_execute("DECLARE curs CURSOR FOR SELECT * FROM verses;")
     .await?;
 
+  const EMBEDDINGS_CACHE: &'static str = "jina_embeddings.json";
+
+  let _ = std::fs::remove_file(EMBEDDINGS_CACHE);
   let mut embedding_file = OpenOptions::new()
     .write(true)
     .append(true)
     .create(true)
-    .open("jina_embeddings.json")?;
-  writeln!(embedding_file, "[")?;
+    .open(EMBEDDINGS_CACHE)?;
 
   loop {
     let rows = transaction.query(&fetch_statement, &[]).await?;
@@ -235,7 +232,7 @@ pub async fn jina_embeddings() -> Result<()> {
           };
 
           let embedding = serde_json::to_string(&embedding)?;
-          writeln!(embedding_file, "{embedding},")?;
+          writeln!(embedding_file, "{embedding}")?;
         }
       }
     }
@@ -245,13 +242,22 @@ pub async fn jina_embeddings() -> Result<()> {
     }
   }
 
-  writeln!(embedding_file, "]")?;
+  drop(embedding_file);
+  drop(transaction);
+
+  let file = File::open("jina_embeddings.json").await?;
+  let mut buffer = io::BufReader::new(file).lines();
+
+  while let Some(line) = buffer.next_line().await? {
+    let embedding: Embedding = serde_json::from_str(&line)?;
+    embedding.insert(&client).await?;
+  }
 
   Ok(())
 }
 
 pub async fn collect_embeddings() -> Result<()> {
-  let mut client = pg().await?;
+  let client = pg().await?;
   let model = SentenceEmbeddingsBuilder::remote(SentenceEmbeddingsModelType::AllDistilrobertaV1)
     .create_model()?;
 

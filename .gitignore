@@ -3,3 +3,4 @@
 /embedder/embedder/__pycache__
 db.sqlite
 embeddings.sqlite
+jina_embeddings.json

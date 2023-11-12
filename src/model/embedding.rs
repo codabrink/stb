@@ -1,8 +1,9 @@
 use anyhow::Result;
-use serde::Serialize;
-use tokio_postgres::{GenericClient, Row};
+use deadpool_postgres::GenericClient;
+use serde::{Deserialize, Serialize};
+use tokio_postgres::Row;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Embedding {
   pub id: i32,
   pub verse_id: i32,
@@ -12,14 +13,15 @@ pub struct Embedding {
 }
 
 impl Embedding {
-  async fn insert(&self, client: impl GenericClient) -> Result<()> {
+  pub async fn insert(&self, client: &impl GenericClient) -> Result<()> {
+    let embedding = serde_json::to_string(&self.embedding)?;
+
     client
       .execute(
-        "INSERT INTO embeddings (verse_id, book_order, embedding, model) VALUES ($1, $2, $3, $4)",
+        &format!("INSERT INTO embeddings (verse_id, book_order, embedding, model) VALUES ($1, $2, '{embedding}', $3)"),
         &[
           &self.verse_id,
           &self.book_order,
-          &self.embedding,
           &(self.model as i32),
         ],
       )
@@ -30,7 +32,7 @@ impl Embedding {
 }
 
 #[repr(i32)]
-#[derive(Serialize, Copy, Clone)]
+#[derive(Serialize, Deserialize, Copy, Clone)]
 pub enum Model {
   BERT = 0,
   JINA = 1,

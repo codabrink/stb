@@ -5,11 +5,11 @@ use tokio_postgres::Row;
 
 #[derive(Serialize)]
 pub struct Book {
-  pub id: u32,
+  pub id: i32,
   pub slug: String,
   pub name: String,
-  pub chapters: u32,
-  pub order: u32,
+  pub chapters: i32,
+  pub order: i32,
 }
 
 impl Book {

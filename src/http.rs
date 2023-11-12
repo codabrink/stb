@@ -3,6 +3,8 @@ use anyhow::Result;
 use rocket::http::{CookieJar, RawStr};
 use rocket::{fs::FileServer, serde::json::Json};
 
+mod cors;
+
 #[get("/q?<q>&<limit>")]
 async fn index(q: &str, limit: Option<usize>, jar: &CookieJar<'_>) -> String {
   dbg!(q);
@@ -21,6 +23,7 @@ async fn index(q: &str, limit: Option<usize>, jar: &CookieJar<'_>) -> String {
 
 pub async fn rocket() -> Result<()> {
   let _ = rocket::build()
+    .attach(cors::CORS)
     .mount("/", routes![index])
     .mount("/", FileServer::from("static"))
     .launch()
