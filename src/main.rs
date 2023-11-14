@@ -15,7 +15,7 @@ mod init;
 mod model;
 mod search;
 
-#[tokio::main]
+#[rocket::main]
 async fn main() -> Result<()> {
   // let args = args::Args::parse();
 
@@ -27,10 +27,10 @@ async fn main() -> Result<()> {
   // println!("{}", b);
   // }
 
-  init::jina_embeddings().await?;
+  // init::jina_embeddings().await?;
 
   // init::summary().await?;
 
-  // rocket().await?;
+  rocket().await?;
   Ok(())
 }

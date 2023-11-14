@@ -3,6 +3,8 @@ use anyhow::Result;
 use serde::Serialize;
 use tokio_postgres::Row;
 
+use super::Verse;
+
 #[derive(Serialize)]
 pub struct Book {
   pub id: i32,
@@ -35,6 +37,22 @@ impl Book {
       .await?;
 
     Ok(row.into())
+  }
+
+  pub async fn chapter(book_slug: &str, chapter: i32) -> Result<Vec<Verse>> {
+    let rows = pg()
+      .await?
+      .query(
+        "
+        SELECT * FROM verses WHERE book_slug = ($1) AND chapter = ($2)
+        ORDER BY verse
+        ",
+        &[&book_slug, &chapter],
+      )
+      .await?;
+
+    let rows: Vec<Verse> = rows.into_iter().map(Verse::from).collect();
+    Ok(rows)
   }
 }
 

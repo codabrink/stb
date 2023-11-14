@@ -4,7 +4,7 @@ use crossbeam_channel::{unbounded, Sender};
 use rust_bert::pipelines::sentence_embeddings::{
   SentenceEmbeddingsBuilder, SentenceEmbeddingsModelType,
 };
-use std::sync::Once;
+use std::{sync::Once, time::Instant};
 use tokio::sync::oneshot::{self, Sender as OSSender};
 use tokio_postgres::NoTls;
 
@@ -48,19 +48,22 @@ pub async fn search(
 ) -> Result<Vec<Verse>> {
   let client = crate::db::POOL.get().await?;
 
+  let start = Instant::now();
   let embedding = serde_json::to_string(&embed(query.to_string()).await?)?;
+  println!("Embedding: {}", start.elapsed().as_millis());
 
+  let start = Instant::now();
   let rows: Vec<Verse> = client
     .query(
       &format!(
         "
       WITH embeddings AS (
-        SELECT verse_id, embedding <-> '{embedding}' AS distance FROM embeddings ORDER BY distance LIMIT {limit}
+        SELECT verse_id, embedding <=> '{embedding}' AS distance
+        FROM embeddings ORDER BY distance LIMIT {limit}
       )
 
       SELECT *, embeddings.distance
       FROM verses JOIN embeddings ON verses.id = embeddings.verse_id
-      ORDER BY embeddings.distance
       "
       ),
       &[],
@@ -69,6 +72,7 @@ pub async fn search(
     .into_iter()
     .map(Verse::from)
     .collect();
+  println!("Query: {}", start.elapsed().as_millis());
 
   Ok(rows)
 }
