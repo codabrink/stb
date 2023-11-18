@@ -1,83 +1,48 @@
-use crate::{prelude::*, search::search};
+use crate::candle::search;
+use crate::model::Book;
+#[cfg(feature = "rust_bert")]
+use crate::search::search;
 use anyhow::Result;
-use lazy_static::lazy_static;
-use rocket::fs::FileServer;
-use rocket::http::CookieJar;
-use rocket_dyn_templates::{context, Template};
-use sass_rocket_fairing::SassFairing;
+use axum::{
+  extract::Path,
+  http::Method,
+  response::{IntoResponse, Json, Response},
+  routing::{get, post},
+  Router,
+};
+use axum_extra::extract::Multipart;
+use tower_http::cors::{Any, CorsLayer};
 
-lazy_static! {
-  pub static ref BOOKS: Vec<Book> = Book::all().unwrap();
-}
-
-#[get("/?<q>&<limit>")]
-async fn index(q: Option<String>, limit: Option<usize>, jar: &CookieJar<'_>) -> Template {
-  let include_apocrypha = match jar.get("include_apocrypha") {
-    Some(cookie) if cookie.value() == "true" => true,
-    _ => false,
-  };
-
-  let mut verses: Option<Vec<Verse>> = None;
-  if let Some(q) = &q {
-    let limit = limit.unwrap_or(20);
-    verses = Some(search(q, limit, include_apocrypha).await.expect("shoot"));
+async fn query(mut multipart: Multipart) -> Response {
+  let mut q = String::new();
+  while let Some(field) = multipart.next_field().await.unwrap() {
+    let name = field.name().unwrap().to_string();
+    match name.as_str() {
+      "q" => q = field.text().await.expect("invalid field"),
+      _ => unreachable!(),
+    }
   }
-
-  Template::render(
-    "index",
-    context! {
-      verses,
-      title: "Search",
-      query: q,
-      all_books: &*BOOKS
-    },
-  )
+  let verses = search(&q, 50, false).await.expect("failure to search");
+  Json(verses).into_response()
 }
 
-#[get("/book/<slug>/<chapter>")]
-async fn chapter(slug: &str, chapter: u64, jar: &CookieJar<'_>) -> Template {
-  verse(slug, chapter, None, jar).await
+async fn chapter(Path((book_slug, chapter)): Path<(String, i32)>) -> String {
+  let verses = Book::chapter(&book_slug, chapter).await.unwrap();
+  serde_json::to_string(&verses).unwrap_or(format!(r#"{{error: "Could not deserialize verses."}}"#))
 }
 
-#[get("/book/<slug>/<chapter>/<verse>")]
-async fn verse(slug: &str, chapter: u64, verse: Option<u64>, jar: &CookieJar<'_>) -> Template {
-  let include_apocrypha = match jar.get("include_apocrypha") {
-    Some(cookie) if cookie.value() == "true" => true,
-    _ => false,
-  };
+pub async fn serve() -> Result<()> {
+  let cors = CorsLayer::new()
+    .allow_methods([Method::GET, Method::POST])
+    .allow_origin(Any);
 
-  let verses = Verse::query(slug, chapter, None).unwrap();
-  let book = Book::query(slug).unwrap();
-  let verse = verse.map(|v| verses[v.saturating_sub(1) as usize].clone());
+  let app = Router::new()
+    .route("/q", post(query))
+    .route("/chapter/:slug/:chapter", get(chapter))
+    .layer(cors);
 
-  let mut similar = None;
-  if let Some(verse) = &verse {
-    similar = Some(search(&verse.content, 5, include_apocrypha).await.unwrap());
-  }
-
-  Template::render(
-    "chapter",
-    context! {
-      verses,
-      title: &slug,
-      book,
-
-      chapter,
-      verse,
-      similar,
-      all_books: &*BOOKS
-    },
-  )
-}
-
-#[rocket::main]
-pub async fn rocket() -> Result<()> {
-  let _ = rocket::build()
-    .mount("/", routes![index, chapter, verse])
-    .attach(Template::fairing())
-    .attach(SassFairing::default())
-    .mount("/", FileServer::from("static"))
-    .launch()
+  axum::Server::bind(&"0.0.0.0:8080".parse().unwrap())
+    .serve(app.into_make_service())
     .await?;
 
   Ok(())

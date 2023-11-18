@@ -1,35 +1,76 @@
-pub use crate::prelude::*;
+use crate::init::pg;
+use anyhow::Result;
+use serde::Serialize;
+use tokio_postgres::Row;
+
+use super::Verse;
 
 #[derive(Serialize)]
 pub struct Book {
-  pub id: u64,
+  pub id: i32,
   pub slug: String,
   pub name: String,
-  pub chapters: u64,
-  pub order: u64,
+  pub chapters: i32,
+  pub order: i32,
 }
 
 impl Book {
-  pub fn all() -> Result<Vec<Self>> {
-    let conn = Connection::open(SQLITE_DB)?;
-    let mut stmt = conn.prepare("SELECT * FROM books")?;
-    let rows = stmt.query_map([], Self::parse_row)?;
-    Ok(rows.flat_map(|b| b).collect())
+  pub async fn all() -> Result<Vec<Self>> {
+    Ok(
+      pg()
+        .await?
+        .query("SELECT * FROM BOOKS", &[])
+        .await?
+        .into_iter()
+        .map(Book::from)
+        .collect(),
+    )
   }
 
-  pub fn query(slug: &str) -> Result<Self> {
-    let conn = Connection::open(SQLITE_DB)?;
-    let query = "SELECT * FROM books WHERE slug = (?1) ORDER BY ord";
-    Ok(conn.query_row(query, [slug], Book::parse_row)?)
+  pub async fn fetch(slug: &str) -> Result<Self> {
+    let row = pg()
+      .await?
+      .query_one(
+        "SELECT * FROM books WHERE slug = (?1) ORDER BY ord",
+        &[&slug],
+      )
+      .await?;
+
+    Ok(row.into())
   }
 
-  fn parse_row(row: &Row) -> Result<Book, rusqlite::Error> {
-    Ok(Book {
-      id: row.get("id")?,
-      slug: row.get("slug")?,
-      name: row.get("name")?,
-      chapters: row.get("chapters")?,
-      order: row.get("ord")?,
-    })
+  pub async fn chapter(book_slug: &str, chapter: i32) -> Result<Vec<Verse>> {
+    let rows = pg()
+      .await?
+      .query(
+        "
+        SELECT * FROM verses WHERE book_slug = ($1) AND chapter = ($2)
+        ORDER BY verse
+        ",
+        &[&book_slug, &chapter],
+      )
+      .await?;
+
+    let rows: Vec<Verse> = rows.into_iter().map(Verse::from).collect();
+    Ok(rows)
+  }
+}
+
+impl From<&Row> for Book {
+  #[inline]
+  fn from(row: &Row) -> Self {
+    Self {
+      id: row.get("id"),
+      slug: row.get("slug"),
+      name: row.get("name"),
+      chapters: row.get("chapters"),
+      order: row.get("ord"),
+    }
+  }
+}
+
+impl From<Row> for Book {
+  fn from(row: Row) -> Self {
+    (&row).into()
   }
 }
