@@ -1,8 +1,6 @@
 use anyhow::Result;
 // use clap::Parser;
 
-use tokio_postgres::{Error, NoTls};
-
 mod args;
 mod candle;
 mod db;

@@ -3,7 +3,7 @@ use candle_core::{Device, Module, Tensor};
 use candle_nn::VarBuilder;
 use candle_transformers::models::jina_bert::{BertModel, Config};
 use crossbeam_channel::{unbounded, Sender};
-use std::sync::Once;
+use std::{collections::HashSet, sync::Once};
 use tokio::sync::oneshot::{self, Sender as OSSender};
 
 use crate::model::Verse;
@@ -37,9 +37,8 @@ fn embed_tx() -> Sender<(Vec<String>, OSSender<EmbedResult>)> {
         let config = Config::v2_base();
         let mut tokenizer =
           tokenizers::Tokenizer::from_file(tokenizer).map_err(anyhow::Error::msg)?;
-        let vb = unsafe {
-          VarBuilder::from_mmaped_safetensors(&[model], candle_core::DType::F32, &device)?
-        };
+        let vb = VarBuilder::from_mmaped_safetensors(&[model], candle_core::DType::F32, &device)?;
+
         let model = BertModel::new(vb, &config)?;
 
         let tokenizer = tokenizer
@@ -102,7 +101,7 @@ pub async fn embed(sentences: Vec<String>) -> Result<EmbedResult> {
 pub async fn search(
   query: impl ToString,
   limit: usize,
-  include_apocrypha: bool,
+  _include_apocrypha: bool,
 ) -> Result<Vec<Verse>> {
   let client = crate::db::POOL.get().await?;
   let embedding = serde_json::to_string(&embed(vec![query.to_string()]).await?[0])?;
@@ -125,6 +124,18 @@ pub async fn search(
     .await?
     .into_iter()
     .map(Verse::from)
+    .collect();
+
+  let mut existing = HashSet::new();
+  let rows = rows
+    .into_iter()
+    .filter(|v| {
+      if existing.contains(&v.id) {
+        return false;
+      }
+      existing.insert(v.id);
+      true
+    })
     .collect();
 
   Ok(rows)
