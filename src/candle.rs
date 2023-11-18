@@ -8,13 +8,14 @@ use tokio::sync::oneshot::{self, Sender as OSSender};
 
 use crate::model::Verse;
 
-static mut TX: Option<Sender<(String, OSSender<Vec<f32>>)>> = None;
+type EmbedResult = Vec<Vec<f32>>;
+static mut TX: Option<Sender<(Vec<String>, OSSender<EmbedResult>)>> = None;
 static INIT_MODEL: Once = Once::new();
 
-fn embed_tx() -> Sender<(String, OSSender<Vec<f32>>)> {
+fn embed_tx() -> Sender<(Vec<String>, OSSender<EmbedResult>)> {
   unsafe {
     INIT_MODEL.call_once(|| {
-      let (tx, rx) = unbounded::<(String, OSSender<Vec<f32>>)>();
+      let (tx, rx) = unbounded::<(Vec<String>, OSSender<EmbedResult>)>();
       std::thread::spawn(move || -> Result<()> {
         use hf_hub::{api::sync::Api, Repo, RepoType};
 
@@ -74,7 +75,12 @@ fn embed_tx() -> Sender<(String, OSSender<Vec<f32>>)> {
           let (n_sentences, n_tokens, _hidden_size) = embeddings.dims3()?;
           let embeddings = (embeddings.sum(1)? / (n_tokens as f64))?;
 
-          let _ = tx.send(embeddings.get(0)?.to_vec1()?);
+          let mut result: EmbedResult = vec![];
+          for i in 0..n_sentences {
+            result.push(embeddings.get(i)?.to_vec1()?);
+          }
+
+          let _ = tx.send(result);
         }
 
         Ok(())
@@ -86,10 +92,10 @@ fn embed_tx() -> Sender<(String, OSSender<Vec<f32>>)> {
   }
 }
 
-pub async fn embed(sentence: String) -> Result<Vec<f32>> {
+pub async fn embed(sentences: Vec<String>) -> Result<EmbedResult> {
   let (os_tx, rx) = oneshot::channel();
   let tx = embed_tx();
-  tx.send((sentence.to_string(), os_tx))?;
+  tx.send((sentences, os_tx))?;
   Ok(rx.await?)
 }
 
@@ -99,7 +105,7 @@ pub async fn search(
   include_apocrypha: bool,
 ) -> Result<Vec<Verse>> {
   let client = crate::db::POOL.get().await?;
-  let embedding = serde_json::to_string(&embed(query.to_string()).await?)?;
+  let embedding = serde_json::to_string(&embed(vec![query.to_string()]).await?[0])?;
 
   let rows: Vec<Verse> = client
     .query(

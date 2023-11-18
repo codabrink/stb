@@ -8,10 +8,9 @@ use axum::{
   http::Method,
   response::{IntoResponse, Json, Response},
   routing::{get, post},
-  Form, Router,
+  Router,
 };
 use axum_extra::extract::Multipart;
-use serde::Deserialize;
 use tower_http::cors::{Any, CorsLayer};
 
 async fn query(mut multipart: Multipart) -> Response {

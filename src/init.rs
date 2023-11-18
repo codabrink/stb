@@ -1,3 +1,4 @@
+use crate::candle::embed;
 use crate::model::embedding::Embedding;
 use crate::model::Verse;
 use crate::{db::POOL, model::embedding::Model};
@@ -138,36 +139,7 @@ pub async fn rebuild_sql() -> Result<()> {
 }
 
 pub async fn jina_embeddings() -> Result<()> {
-  use hf_hub::{api::sync::Api, Repo, RepoType};
-
   let mut client = pg().await?;
-
-  let model = Api::new()?
-    .repo(Repo::new(
-      "jinaai/jina-embeddings-v2-base-en".to_string(),
-      RepoType::Model,
-    ))
-    .get("model.safetensors")?;
-
-  let tokenizer = Api::new()?
-    .repo(Repo::new(
-      "sentence-transformers/all-MiniLM-L6-v2".to_string(),
-      RepoType::Model,
-    ))
-    .get("tokenizer.json")?;
-
-  let device = Device::Cpu;
-  let config = Config::v2_base();
-  let mut tokenizer = tokenizers::Tokenizer::from_file(tokenizer).map_err(anyhow::Error::msg)?;
-  let vb =
-    unsafe { VarBuilder::from_mmaped_safetensors(&[model], candle_core::DType::F32, &device)? };
-  let model = BertModel::new(vb, &config)?;
-
-  let tokenizer = tokenizer
-    .with_padding(None)
-    .with_truncation(None)
-    .map_err(anyhow::Error::msg)?;
-
   const LIMIT: usize = 100;
   let fetch_statement = format!("FETCH {LIMIT} FROM curs;");
 
@@ -193,37 +165,8 @@ pub async fn jina_embeddings() -> Result<()> {
       let fragments = verse.shatter()?;
 
       for fragments in fragments.chunks(10) {
-        if let Some(pp) = tokenizer.get_padding_mut() {
-          pp.strategy = tokenizers::PaddingStrategy::BatchLongest;
-        } else {
-          let pp = tokenizers::PaddingParams {
-            strategy: tokenizers::PaddingStrategy::BatchLongest,
-            ..Default::default()
-          };
-          tokenizer.with_padding(Some(pp));
-        }
-
-        let tokens = tokenizer
-          .encode_batch(fragments.into(), true)
-          .map_err(E::msg)?;
-        let token_ids = tokens
-          .iter()
-          .map(|tokens| {
-            let tokens = tokens.get_ids().to_vec();
-            Tensor::new(tokens.as_slice(), &device)
-          })
-          .collect::<candle_core::Result<Vec<_>>>()?;
-        let token_ids = Tensor::stack(&token_ids, 0)?;
-
-        let embeddings = model.forward(&token_ids)?;
-
-        let (n_fragments, n_tokens, _hidden_size) = embeddings.dims3()?;
-        let embeddings = (embeddings.sum(1)? / (n_tokens as f64))?;
-
-        for i in 0..n_fragments {
-          let embedding = embeddings.get(i)?;
-          let embedding: Vec<f32> = embedding.to_vec1()?;
-
+        let embeddings = embed(fragments.to_vec()).await?;
+        for embedding in embeddings {
           let embedding = Embedding {
             embedding,
             id: 0,
