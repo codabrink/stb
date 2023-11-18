@@ -8,6 +8,7 @@ use candle_transformers::models::jina_bert::{BertModel, Config};
 use deadpool_postgres::Object;
 use glob::glob;
 use regex::Regex;
+#[cfg(feature = "rust_bert")]
 use rust_bert::pipelines::sentence_embeddings::{
   SentenceEmbeddingsBuilder, SentenceEmbeddingsModel, SentenceEmbeddingsModelType,
 };
@@ -256,6 +257,7 @@ pub async fn jina_embeddings() -> Result<()> {
   Ok(())
 }
 
+#[cfg(feature = "rust_bert")]
 pub async fn collect_embeddings() -> Result<()> {
   let client = pg().await?;
   let model = SentenceEmbeddingsBuilder::remote(SentenceEmbeddingsModelType::AllDistilrobertaV1)
@@ -305,6 +307,7 @@ pub async fn collect_embeddings() -> Result<()> {
   Ok(())
 }
 
+#[cfg(feature = "rust_bert")]
 fn embed(texts: Vec<String>, model: &SentenceEmbeddingsModel) -> Result<Vec<Vec<f32>>> {
   Ok(model.encode(&texts)?)
 }

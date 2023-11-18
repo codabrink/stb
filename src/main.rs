@@ -1,21 +1,18 @@
-#[macro_use]
-extern crate rocket;
-
-use std::time::Duration;
-
 use anyhow::Result;
 // use clap::Parser;
-use http::rocket;
+
 use tokio_postgres::{Error, NoTls};
 
 mod args;
+mod candle;
 mod db;
 mod http;
 mod init;
 mod model;
+#[cfg(feature = "rust_bert")]
 mod search;
 
-#[rocket::main]
+#[tokio::main]
 async fn main() -> Result<()> {
   // let args = args::Args::parse();
 
@@ -31,6 +28,6 @@ async fn main() -> Result<()> {
 
   // init::summary().await?;
 
-  rocket().await?;
+  http::serve().await?;
   Ok(())
 }

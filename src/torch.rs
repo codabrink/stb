@@ -1,4 +1,4 @@
-use crate::{init::pg, model::Verse};
+use crate::model::Verse;
 use anyhow::Result;
 use crossbeam_channel::{unbounded, Sender};
 use rust_bert::pipelines::sentence_embeddings::{
@@ -6,13 +6,13 @@ use rust_bert::pipelines::sentence_embeddings::{
 };
 use std::{sync::Once, time::Instant};
 use tokio::sync::oneshot::{self, Sender as OSSender};
-use tokio_postgres::NoTls;
 
 static mut TX: Option<Sender<(String, OSSender<Vec<f32>>)>> = None;
 
 static INIT_MODEL: Once = Once::new();
 
 // Create a channel to the worker thread for an embedding request
+
 fn embed_tx() -> Sender<(String, OSSender<Vec<f32>>)> {
   unsafe {
     INIT_MODEL.call_once(|| {

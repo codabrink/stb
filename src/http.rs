@@ -1,50 +1,36 @@
+use crate::candle::search;
 use crate::model::Book;
+#[cfg(feature = "rust_bert")]
 use crate::search::search;
 use anyhow::Result;
-use rocket::form::Form;
-use rocket::fs::FileServer;
-use rocket::http::CookieJar;
+use axum::{extract::Path, routing::get, Form, Router};
+use serde::Deserialize;
 
-mod cors;
+async fn query(form: Form<Query>) -> String {
+  let verses = search(&form.q, 50, false).await.expect("failure to search");
 
-#[get("/q?<q>&<limit>")]
-async fn get_index(q: &str, limit: Option<usize>, jar: &CookieJar<'_>) -> String {
-  // index(q, limit, jar).await
-  "{}".to_owned()
+  serde_json::to_string(&verses).expect("unable to serialize verses")
 }
 
-#[post("/q", data = "<q>")]
-async fn index(q: Form<Query<'_>>, jar: &CookieJar<'_>) -> String {
-  let include_apocrypha = match jar.get("include_apocrypha") {
-    Some(cookie) if cookie.value() == "true" => true,
-    _ => false,
-  };
-
-  let a = search(q.q, 50, include_apocrypha)
-    .await
-    .expect("failure to search");
-
-  serde_json::to_string_pretty(&a).expect("serilize")
-}
-
-#[get("/chapter/<book_slug>/<chapter>")]
-async fn chapter(book_slug: &str, chapter: i32) -> String {
-  let verses = Book::chapter(book_slug, chapter).await.unwrap();
+async fn chapter(Path((book_slug, chapter)): Path<(String, i32)>) -> String {
+  let verses = Book::chapter(&book_slug, chapter).await.unwrap();
   serde_json::to_string(&verses).unwrap_or(format!(r#"{{error: "Could not deserialize verses."}}"#))
 }
 
-#[derive(FromForm)]
-struct Query<'r> {
-  q: &'r str,
+#[derive(Deserialize)]
+struct Query {
+  q: String,
 }
 
-pub async fn rocket() -> Result<()> {
-  let _ = rocket::build()
-    .attach(cors::CORS)
-    .mount("/", routes![index, get_index, chapter])
-    .mount("/", FileServer::from("static"))
-    .launch()
-    .await?;
+pub async fn serve() -> Result<()> {
+  let app = Router::new()
+    .route("/q", get(query))
+    .route("/chapter/:slug/:chapter", get(chapter));
+
+  axum::Server::bind(&"0.0.0.0:8080".parse().unwrap())
+    .serve(app.into_make_service())
+    .await
+    .unwrap();
 
   Ok(())
 }
