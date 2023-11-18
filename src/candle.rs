@@ -107,7 +107,7 @@ pub async fn search(
         "
       WITH embeddings AS (
         SELECT verse_id, embedding <=> '{embedding}' AS distance
-        FROM embeddings ORDER BY distance LIMIT {limit}
+        FROM embeddings WHERE model = 1 ORDER BY distance LIMIT {limit}
       )
 
       SELECT *, embeddings.distance
