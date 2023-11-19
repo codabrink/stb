@@ -18,12 +18,14 @@ impl Embedding {
 
     client
       .execute(
-        &format!("INSERT INTO embeddings (verse_id, book_order, embedding, model) VALUES ($1, $2, '{embedding}', $3)"),
-        &[
-          &self.verse_id,
-          &self.book_order,
-          &(self.model as i32),
-        ],
+        &format!(
+          "
+        INSERT INTO embeddings (verse_id, book_order, embedding, model)
+        VALUES ($1, $2, '{embedding}', $3)
+        ON CONFLICT (from_verse_id, to_verse_id) DO UPDATE
+        "
+        ),
+        &[&self.verse_id, &self.book_order, &(self.model as i32)],
       )
       .await?;
 

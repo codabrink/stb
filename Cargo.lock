@@ -335,7 +335,7 @@ dependencies = [
 [[package]]
 name = "candle-core"
 version = "0.3.1"
-source = "git+https://github.com/huggingface/candle.git#d31f11035fb69d06bf22194d918a5efc45c8ab37"
+source = "git+https://github.com/huggingface/candle.git#f49bf6a81dca20b4b684e9b6e4fdec868fb53c45"
 dependencies = [
  "byteorder",
  "gemm",
@@ -355,7 +355,7 @@ dependencies = [
 [[package]]
 name = "candle-nn"
 version = "0.3.1"
-source = "git+https://github.com/huggingface/candle.git#d31f11035fb69d06bf22194d918a5efc45c8ab37"
+source = "git+https://github.com/huggingface/candle.git#f49bf6a81dca20b4b684e9b6e4fdec868fb53c45"
 dependencies = [
  "candle-core",
  "half",
@@ -369,7 +369,7 @@ dependencies = [
 [[package]]
 name = "candle-transformers"
 version = "0.3.1"
-source = "git+https://github.com/huggingface/candle.git#d31f11035fb69d06bf22194d918a5efc45c8ab37"
+source = "git+https://github.com/huggingface/candle.git#f49bf6a81dca20b4b684e9b6e4fdec868fb53c45"
 dependencies = [
  "byteorder",
  "candle-core",
@@ -1929,9 +1929,9 @@ checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
 
 [[package]]
 name = "pulp"
-version = "0.18.4"
+version = "0.18.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7057c1435edb390ebfc51743abad043377f1f698ce8e649a9b52a4b378be5e4d"
+checksum = "16785ee69419641c75affff7c9fdbdb7c0ab26dc9a5fb5218c2a2e9e4ef2087d"
 dependencies = [
  "bytemuck",
  "libm",
@@ -2210,9 +2210,9 @@ checksum = "d626bb9dae77e28219937af045c257c28bfd3f69333c512553507f5f9798cb76"
 
 [[package]]
 name = "rustix"
-version = "0.38.24"
+version = "0.38.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ad981d6c340a49cdc40a1028d9c6084ec7e9fa33fcb839cab656a267071e234"
+checksum = "dc99bc2d4f1fed22595588a013687477aedf3cdcfb26558c559edb67b4d9b22e"
 dependencies = [
  "bitflags 2.4.1",
  "errno",

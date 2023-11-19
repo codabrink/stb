@@ -19,7 +19,7 @@ impl Book {
     Ok(
       pg()
         .await?
-        .query("SELECT * FROM BOOKS", &[])
+        .query("SELECT * FROM BOOKS ORDER BY ord", &[])
         .await?
         .into_iter()
         .map(Book::from)
@@ -31,7 +31,7 @@ impl Book {
     let row = pg()
       .await?
       .query_one(
-        "SELECT * FROM books WHERE slug = (?1) ORDER BY ord",
+        "SELECT * FROM books WHERE slug = ($1) ORDER BY ord",
         &[&slug],
       )
       .await?;

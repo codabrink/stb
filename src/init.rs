@@ -1,15 +1,17 @@
 use crate::candle::embed;
 use crate::model::embedding::Embedding;
-use crate::model::Verse;
+use crate::model::{Book, Quote, Verse};
 use crate::{db::POOL, model::embedding::Model};
 use anyhow::Result;
 use deadpool_postgres::Object;
 use glob::glob;
+use once_cell::sync::Lazy;
 use regex::Regex;
 #[cfg(feature = "rust_bert")]
 use rust_bert::pipelines::sentence_embeddings::{
   SentenceEmbeddingsBuilder, SentenceEmbeddingsModel, SentenceEmbeddingsModelType,
 };
+use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use tokio::fs::File;
@@ -25,6 +27,61 @@ pub async fn reset_db() -> Result<()> {
     .batch_execute("CREATE EXTENSION vector;")
     .await?;
 
+  let client = pg().await?;
+
+  client
+    .batch_execute(
+      "
+      CREATE TABLE verses (
+        id         SERIAL PRIMARY KEY,
+        book_slug  TEXT NOT NULL,
+        book       TEXT NOT NULL,
+        book_order INTEGER NOT NULL,
+        chapter    INTEGER NOT NULL,
+        verse      INTEGER NOT NULL,
+        part       INTEGER NOT NULL,
+        content    TEXT NOT NULL
+      );
+      CREATE INDEX idx_verses ON verses (book_slug, book_order, chapter, verse, part);
+
+      CREATE TABLE books (
+        id       SERIAL PRIMARY KEY,
+        slug     TEXT NOT NULL,
+        name     TEXT NOT NULL,
+        chapters INTEGER NOT NULL,
+        ord      INTEGER NOT NULL
+      );
+      CREATE INDEX idx_books ON books (ord, slug);
+
+      CREATE TABLE embeddings (
+        id         SERIAL PRIMARY KEY,
+        verse_id   INTEGER NOT NULL,
+        book_order INTEGER NOT NULL,
+        embedding  vector(768),
+        model      INTEGER NOT NULL
+      );
+      CREATE INDEX idx_embeddings ON embeddings (verse_id);
+      CREATE INDEX idx_model ON embeddings (model);
+      CREATE UNIQUE INDEX idx_unique ON embeddings (model, verse_id, book_order);
+
+      CREATE TABLE characters (
+        id   SERIAL PRIMARY KEY,
+        name TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX idx_charachter_name ON characters (name);
+
+      CREATE TABLE quotes (
+        id SERIAL     PRIMARY KEY,
+        from_verse_id INTEGER NOT NULL,
+        to_verse_id   INTEGER NOT NULL,
+        character_id  INTEGER
+      );
+      CREATE UNIQUE INDEX idx_quotes_from_to_verse ON quotes (from_verse_id, to_verse_id);
+      CREATE INDEX idx_quote_character ON quotes (character_id);
+      ",
+    )
+    .await?;
+
   Ok(())
 }
 
@@ -32,46 +89,13 @@ pub async fn pg() -> Result<Object> {
   Ok(POOL.get().await?)
 }
 
+pub const LQ: char = '“';
+pub const RQ: char = '”';
+static PUNCTUATION: Lazy<Regex> = Lazy::new(|| Regex::new(r",|\.").unwrap());
+
 pub async fn rebuild_sql() -> Result<()> {
   reset_db().await?;
-  let client = pg().await?;
-
-  client
-    .batch_execute(
-      "
-    CREATE TABLE verses (
-      id         SERIAL PRIMARY KEY,
-      book_slug  TEXT NOT NULL,
-      book       TEXT NOT NULL,
-      book_order INTEGER NOT NULL,
-      chapter    INTEGER NOT NULL,
-      verse      INTEGER NOT NULL,
-      content    TEXT NOT NULL
-    );
-    CREATE INDEX idx_verses ON verses (book_slug, book_order, chapter, verse);
-
-    CREATE TABLE books (
-      id       SERIAL PRIMARY KEY,
-      slug     TEXT NOT NULL,
-      name     TEXT NOT NULL,
-      chapters INTEGER NOT NULL,
-      ord      INTEGER NOT NULL
-    );
-    CREATE INDEX idx_books ON books (ord, slug);
-
-    CREATE TABLE embeddings (
-      id         SERIAL PRIMARY KEY,
-      verse_id   INTEGER NOT NULL,
-      book_order INTEGER NOT NULL,
-      embedding  vector(768),
-      model      INTEGER NOT NULL
-    );
-    CREATE INDEX idx_embeddings ON embeddings (verse_id);
-    CREATE INDEX idx_model ON embeddings (model);
-    CREATE UNIQUE INDEX idx_unique ON embeddings (model, verse_id, book_order);
-    ",
-    )
-    .await?;
+  let mut client = pg().await?;
 
   let chapter_regex = Regex::new(r"Chapter\s(\d+)\.")?;
 
@@ -85,8 +109,17 @@ pub async fn rebuild_sql() -> Result<()> {
 
     let text_file = std::fs::read_to_string(&entry)?;
     let lines: Vec<&str> = text_file.split('\n').collect();
+    let words: Vec<Vec<String>> = lines
+      .iter()
+      .map(|v| {
+        v.split(' ')
+          .map(|word| PUNCTUATION.replace(word, "").to_lowercase().to_string())
+          .collect()
+      })
+      .collect();
 
-    let book = &lines[0][..lines[0].len() - 1];
+    // chopping the first 3 bytes is to trim the BOM
+    let book = &lines[0][..lines[0].len() - 1][3..];
     let chapter: i32 = chapter_regex.captures(&lines[1]).unwrap()[1].parse()?;
 
     {
@@ -117,22 +150,100 @@ pub async fn rebuild_sql() -> Result<()> {
       entry.file_name().unwrap().to_string_lossy()
     );
 
+    let transaction = client.transaction().await?;
+
     let mut verse = 1;
     for line in &lines[2..] {
       if line.trim().is_empty() {
         continue;
       }
 
-      client.execute(
-        "INSERT INTO verses (book, book_order, book_slug, chapter, verse, content) VALUES ($1, $2, $3, $4, $5, $6)",
-        &[&book, &order, &slug, &chapter, &verse, &line],
-      ).await?;
+      let mut parts = Verse::to_parts(line);
+
+      for (i, part) in parts.iter().enumerate() {
+        transaction.execute(
+          "INSERT INTO verses (book, book_order, book_slug, chapter, verse, content, part) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+          &[&book, &order, &slug, &chapter, &verse, &part, &((i + 1) as i32)],
+        ).await?;
+      }
 
       verse += 1;
     }
+
+    transaction.commit().await?;
   }
 
+  println!("Building quotes...");
+  build_quotes().await?;
+
   Ok(())
+}
+
+pub async fn build_quotes() -> Result<()> {
+  let books = Book::all().await?;
+
+  let mut quotes = vec![];
+  let mut characters = HashSet::new();
+  let mut client = pg().await?;
+  let transaction = client.transaction().await?;
+
+  let mut quote = None;
+  for book in books {
+    for chapter in 1..book.chapters {
+      let verse_parts = Verse::query(&book.slug, chapter, None).await?;
+      for (i, verse_part) in verse_parts.iter().enumerate() {
+        if verse_part.content.starts_with(LQ) {
+          quote = Some(Quote {
+            id: 0,
+            from_verse_id: verse_part.id,
+            to_verse_id: 0,
+            charcter_id: None,
+          });
+        }
+        if verse_part.content.ends_with(RQ) {
+          if let Some(mut q) = quote.take() {
+            q.to_verse_id = verse_part.id;
+            q.insert(&transaction).await?;
+            let character = find_character(&verse_parts[i.saturating_sub(6)..=i]).await?;
+            if let Some(c) = character {
+              characters.insert(c);
+            }
+            quotes.push(q);
+          }
+        }
+      }
+    }
+  }
+
+  transaction.commit().await?;
+
+  // println!("{} quotes", quotes.len());
+  dbg!(&characters);
+  println!("{} characters", characters.len());
+
+  Ok(())
+}
+
+const INITIATIVE: &'static [&'static str] = &[" said", " called"];
+
+async fn find_character(verses: &[Verse]) -> Result<Option<String>> {
+  for i in (0..verses.len()).rev() {
+    for init in INITIATIVE {
+      let verse = &verses[i];
+      if verse.content.contains(init) {
+        let words: Vec<&str> = verse.content.split(' ').collect();
+        let init = init.trim();
+
+        // prone to crashing
+        let i = words.iter().position(|w| w.starts_with(init)).unwrap();
+        let character = words[i - 1];
+
+        return Ok(Some(character.to_owned()));
+      }
+    }
+  }
+
+  Ok(None)
 }
 
 pub async fn jina_embeddings() -> Result<()> {
@@ -184,7 +295,7 @@ pub async fn jina_embeddings() -> Result<()> {
   }
 
   drop(embedding_file);
-  drop(transaction);
+  transaction.commit().await?;
 
   let file = File::open("jina_embeddings.json").await?;
   let mut buffer = io::BufReader::new(file).lines();

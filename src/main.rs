@@ -14,7 +14,8 @@ mod search;
 async fn main() -> Result<()> {
   // let args = args::Args::parse();
 
-  // init::rebuild_sql()?;
+  init::rebuild_sql().await?;
+  // init::build_quotes().await?;
   // init::collect_embeddings().expect("Problem rebuilding vector");
 
   // let a = search_blocking("Where is the peace of God?", 0, false)?;
@@ -26,6 +27,6 @@ async fn main() -> Result<()> {
 
   // init::summary().await?;
 
-  http::serve().await?;
+  // http::serve().await?;
   Ok(())
 }
